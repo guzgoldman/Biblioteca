@@ -1,9 +1,21 @@
-from datetime import datetime
-class Prestamo:
-    
-    def __init__(self, libro, usuario, fechaPrestamo = datetime.datetime, fechaDevolucion = None):
-        self.libro=libro
-        self.usuario=usuario
+from sqlalchemy import Column, Integer, ForeignKey, DateTime, func
+from sqlalchemy.orm import relationship
+from db.Conector import Base
 
-    def __str__(self):
-        return f"Prestamo del libro {self.libro.titulo} al usuario {self.usuario.nombre} {self.usuario.apellido} en la fecha {self.fechaPrestamo}"
+class Prestamo(Base):
+    __tablename__ = "prestamos"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+
+    libro_id = Column(Integer, ForeignKey("libros.id", ondelete="RESTRICT"), nullable=False, index=True)
+    usuario_id = Column(Integer, ForeignKey("usuarios.id", ondelete="RESTRICT"), nullable=False, index=True)
+
+    fecha_prestamo = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    fecha_devolucion = Column(DateTime(timezone=True), nullable=True)
+
+    # Relaciones
+    libro = relationship("Libro", back_populates="prestamos")
+    usuario = relationship("Usuario", back_populates="prestamos")
+
+    def __repr__(self):
+        return f"<Prestamo id={self.id} libro_id={self.libro_id} usuario_id={self.usuario_id}>"
