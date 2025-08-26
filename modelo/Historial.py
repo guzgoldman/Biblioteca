@@ -6,12 +6,10 @@ class Historial(Base):
     __tablename__ = "historial"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    # Qué registramos (por ejemplo: PRESTAR, DEVOLVER, ALTA_LIBRO, BAJA_LIBRO, etc.)
     accion = Column(String(50), nullable=False)
     detalle = Column(Text, nullable=True)
     timestamp = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
-    # Opcional: atarlo al préstamo
     prestamo_id = Column(Integer, ForeignKey("prestamos.id", ondelete="SET NULL"), nullable=True)
 
     prestamo = relationship("Prestamo")
