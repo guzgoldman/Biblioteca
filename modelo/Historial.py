@@ -10,6 +10,8 @@ class Historial(Base):
     detalle = Column(Text, nullable=True)
     timestamp = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
-    prestamo_id = Column(Integer, ForeignKey("prestamos.id", ondelete="SET NULL"), nullable=True)
+    prestamo_id  = Column(Integer, ForeignKey("prestamos.id", ondelete="SET NULL"), nullable=True)
+    ejemplar_id  = Column(Integer, ForeignKey("ejemplares.id", ondelete="SET NULL"), nullable=True)
+    usuario_id   = Column(Integer, ForeignKey("usuarios.id",  ondelete="SET NULL"), nullable=True)
 
     prestamo = relationship("Prestamo")
