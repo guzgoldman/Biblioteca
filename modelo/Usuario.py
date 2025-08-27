@@ -26,7 +26,6 @@ class Usuario(Base):
         if not dni or not nombre or not apellido:
             raise ValueError("dni, nombre y apellido son obligatorios")
 
-        # ¿Existe ya ese DNI?
         existente = session.query(cls).filter_by(dni=dni).one_or_none()
         if existente:
             raise ValueError(f"Ya existe un usuario con DNI {dni}")
@@ -40,7 +39,6 @@ class Usuario(Base):
                 session.refresh(user)
             except IntegrityError as e:
                 session.rollback()
-                # Doble defensa por si hay carrera y el UNIQUE salta desde la BD
                 raise ValueError(f"El DNI {dni} ya existe (UNIQUE).") from e
 
         return user

@@ -11,7 +11,6 @@ def prestar_por_dni_y_codigo(session: Session, dni: str, codigo_ejemplar: str) -
     if not dni or not codigo_ejemplar:
         raise ValueError("DNI y código de ejemplar son obligatorios")
 
-    # Traer datos
     usuario = session.execute(select(Usuario).where(Usuario.dni == dni)).scalar_one_or_none()
     if not usuario:
         raise ValueError(f"Usuario con DNI {dni} no existe")
@@ -20,17 +19,14 @@ def prestar_por_dni_y_codigo(session: Session, dni: str, codigo_ejemplar: str) -
     if not ejemplar:
         raise ValueError(f"Ejemplar con código {codigo_ejemplar} no existe")
 
-    # (Opcional) Bloquear fila del ejemplar para evitar carreras
     session.execute(select(Ejemplar).where(Ejemplar.id == ejemplar.id).with_for_update())
 
-    # Validar que no haya préstamo activo de ese ejemplar
     prestamo_activo = session.execute(
         select(Prestamo).where(Prestamo.ejemplar_id == ejemplar.id, Prestamo.fecha_devolucion.is_(None))
     ).scalar_one_or_none()
     if prestamo_activo:
         raise ValueError("Ya existe un préstamo activo para ese ejemplar")
 
-    # Crear usando el método del modelo
     prestamo = Prestamo.crear(session, ejemplar, usuario)
     return prestamo
 
