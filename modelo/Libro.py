@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import relationship, Session
 from modelo.Ejemplar import Ejemplar
 from db.Conector import Base
+from modelo.LibroCategoria import libro_categoria
 
 class Libro(Base):
     __tablename__ = "libros"
@@ -11,6 +12,7 @@ class Libro(Base):
     autor = Column(String(150), nullable=False)
 
     ejemplares = relationship("Ejemplar", back_populates="libro", cascade="all, delete-orphan")
+    categorias = relationship("Categoria", secondary=libro_categoria, back_populates="libros")
 
     def __repr__(self):
         return f"<Libro id={self.id} titulo={self.titulo!r} autor={self.autor!r}>"
