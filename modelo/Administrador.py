@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import relationship, Session
 from sqlalchemy.exc import IntegrityError
 from db.Conector import Base
+import hashlib
 
 class Administrador(Base):
     __tablename__ = "administradores"
@@ -12,8 +13,16 @@ class Administrador(Base):
     apellido = Column(String(100), nullable=False)
     password = Column(String(255), nullable=False)
 
+    # Relación con préstamos
+    prestamos = relationship("Prestamo", back_populates="administrador")
+
     def __repr__(self):
         return f"<Administrador dni={self.dni} nombre={self.nombre} apellido={self.apellido}>"
+
+    def verificar_password(self, password: str) -> bool:
+        """Verifica si el password proporcionado coincide con el hash almacenado."""
+        password_hash = hashlib.sha256(password.encode('utf-8')).hexdigest()
+        return self.password == password_hash
 
     @classmethod
     def crear(cls, session: Session, dni: str, nombre: str, apellido: str, password: str, *, commit: bool = False) -> "Administrador":
@@ -30,7 +39,10 @@ class Administrador(Base):
         if existente:
             raise ValueError(f"Ya existe un administrador con DNI {dni}")
 
-        user = cls(dni=dni, nombre=nombre, apellido=apellido, password=password)
+        # Hashear el password usando SHA-256
+        password_hash = hashlib.sha256(password.encode('utf-8')).hexdigest()
+
+        user = cls(dni=dni, nombre=nombre, apellido=apellido, password=password_hash)
         session.add(user)
 
         if commit:

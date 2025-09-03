@@ -1,7 +1,4 @@
-from modelo.Libro import Libro
-from modelo.Historial import Historial
-from modelo.Prestamo import Prestamo
-from modelo.Administrador import Administrador
+from modelo import Libro, Historial, Prestamo, Administrador
 from estructuras.ListaEnlazada import ListaEnlazada
 from estructuras.Pila import Pila
 
@@ -25,7 +22,7 @@ class SistemaBiblioteca:
         
     def buscar_libro_por_titulo(self, titulo):
         return self.catalogo_libros.buscar_por_titulo(titulo)
-    
+
     def buscar_libro_por_autor(self, autor):
         return self.catalogo_libros.buscar_por_autor(autor)
         
@@ -108,4 +105,3 @@ class SistemaBiblioteca:
             libro_afectado = ultima_operacion[1]
             libro_afectado.disponible = False
             print(f"La última operación (devolución de '{libro_afectado.titulo}') ha sido deshecha. El libro ahora está prestado.")
-       
