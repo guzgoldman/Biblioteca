@@ -10,6 +10,7 @@ class Prestamo(Base):
     ejemplar_id = Column(Integer, ForeignKey("ejemplares.id", ondelete="RESTRICT"), nullable=False, index=True)
     usuario_id = Column(Integer, ForeignKey("usuarios.id", ondelete="RESTRICT"), nullable=False, index=True)
     fecha_prestamo = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    fecha_devolucion_pactada = Column(DateTime(timezone=True), nullable=False)
     fecha_devolucion = Column(DateTime(timezone=True), nullable=True)
 
     ejemplar = relationship("Ejemplar", back_populates="prestamos")

@@ -8,10 +8,9 @@ class Ejemplar(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     codigo = Column(String(50), unique=True, nullable=False, index=True)
     disponible = Column(Boolean, nullable=False, default=True)
-
     libro_id = Column(Integer, ForeignKey("libros.id", ondelete="RESTRICT"), nullable=False, index=True)
+    
     libro = relationship("Libro", back_populates="ejemplares")
-
     prestamos = relationship("Prestamo", back_populates="ejemplar")
 
     def __repr__(self):

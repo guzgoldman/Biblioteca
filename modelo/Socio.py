@@ -3,22 +3,23 @@ from sqlalchemy.orm import relationship, Session
 from sqlalchemy.exc import IntegrityError
 from db.Conector import Base
 
-class Usuario(Base):
-    __tablename__ = "usuarios"
+class Socio(Base):
+    __tablename__ = "socios"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     dni = Column(String(20), unique=True, nullable=False, index=True)
     nombre = Column(String(100), nullable=False)
     apellido = Column(String(100), nullable=False)
+    direccion = Column(String(255), nullable=False)
 
-    prestamos = relationship("Prestamo", back_populates="usuario", cascade="all, delete-orphan")
+    prestamos = relationship("Prestamo", back_populates="socio", cascade="all, delete-orphan")
 
     def __repr__(self):
-        return f"<Usuario dni={self.dni} nombre={self.nombre} apellido={self.apellido}>"
+        return f"<Socio dni={self.dni} nombre={self.nombre} apellido={self.apellido}>"
 
     @classmethod
-    def crear(cls, session: Session, dni: str, nombre: str, apellido: str, *, commit: bool = False) -> "Usuario":
-        """Crea un usuario nuevo. Lanza ValueError si el DNI ya existe."""
+    def crear(cls, session: Session, dni: str, nombre: str, apellido: str, *, commit: bool = False) -> "Socio":
+        """Crea un socio nuevo. Lanza ValueError si el DNI ya existe."""
         dni = (dni or "").strip()
         nombre = (nombre or "").strip()
         apellido = (apellido or "").strip()
@@ -28,7 +29,7 @@ class Usuario(Base):
 
         existente = session.query(cls).filter_by(dni=dni).one_or_none()
         if existente:
-            raise ValueError(f"Ya existe un usuario con DNI {dni}")
+            raise ValueError(f"Ya existe un socio con DNI {dni}")
 
         user = cls(dni=dni, nombre=nombre, apellido=apellido)
         session.add(user)
@@ -44,12 +45,12 @@ class Usuario(Base):
         return user
 
     @classmethod
-    def obtener_por_dni(cls, session: Session, dni: str) -> "Usuario | None":
+    def obtener_por_dni(cls, session: Session, dni: str) -> "Socio | None":
         return session.query(cls).filter_by(dni=dni.strip()).one_or_none()
 
     @classmethod
-    def get_or_create(cls, session: Session, dni: str, nombre: str, apellido: str, *, commit: bool = False) -> "Usuario":
-        """Devuelve el usuario si existe; si no, lo crea."""
+    def get_or_create(cls, session: Session, dni: str, nombre: str, apellido: str, *, commit: bool = False) -> "Socio":
+        """Devuelve el socio si existe; si no, lo crea."""
         user = cls.obtener_por_dni(session, dni)
         if user:
             return user

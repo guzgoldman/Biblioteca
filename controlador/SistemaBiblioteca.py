@@ -1,7 +1,7 @@
 from modelo.Libro import Libro
 from modelo.Historial import Historial
 from modelo.Prestamo import Prestamo
-from modelo.Usuario import Usuario
+from modelo.Administrador import Administrador
 from estructuras.ListaEnlazada import ListaEnlazada
 from estructuras.Pila import Pila
 
@@ -9,7 +9,8 @@ class SistemaBiblioteca:
 
     def __init__(self):
         self.catalogo_libros=ListaEnlazada()
-        self.lista_usuarios=ListaEnlazada()
+        self.lista_socios=ListaEnlazada()
+        self.lista_administradores=ListaEnlazada()
         self.Historial_Prestamos=Pila()
 
     def agregar_libro(self, codigo, titulo, autor):
