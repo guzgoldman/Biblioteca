@@ -15,14 +15,14 @@ class DashboardApp(ctk.CTk):
 
         # === ICONOS ===
         self.icons = {
-            "home": ctk.CTkImage(light_image=Image.open("icons/home.png"), size=(20, 20)),
-            "user": ctk.CTkImage(light_image=Image.open("icons/user.png"), size=(20, 20)),
-            "book": ctk.CTkImage(light_image=Image.open("icons/book.png"), size=(20, 20)),
-            "send": ctk.CTkImage(light_image=Image.open("icons/send.png"), size=(20, 20)),
-            "check": ctk.CTkImage(light_image=Image.open("icons/check.png"), size=(20, 20)),
-            "cancel": ctk.CTkImage(light_image=Image.open("icons/cancel.png"), size=(20, 20)),
-            "calendar": ctk.CTkImage(light_image=Image.open("icons/calendar.png"), size=(20, 20)),
-            "logout": ctk.CTkImage(light_image=Image.open("icons/logout.png"), size=(20, 20)),
+            "home": ctk.CTkImage(light_image=Image.open("vista/icons/home.png"), size=(20, 20)),
+            "user": ctk.CTkImage(light_image=Image.open("vista/icons/user.png"), size=(20, 20)),
+            "book": ctk.CTkImage(light_image=Image.open("vista/icons/book.png"), size=(20, 20)),
+            "send": ctk.CTkImage(light_image=Image.open("vista/icons/send.png"), size=(20, 20)),
+            "check": ctk.CTkImage(light_image=Image.open("vista/icons/check.png"), size=(20, 20)),
+            "cancel": ctk.CTkImage(light_image=Image.open("vista/icons/cancel.png"), size=(20, 20)),
+            "calendar": ctk.CTkImage(light_image=Image.open("vista/icons/calendar.png"), size=(20, 20)),
+            "logout": ctk.CTkImage(light_image=Image.open("vista/icons/logout.png"), size=(20, 20)),
         }
 
         # === SIDEBAR ===
@@ -44,8 +44,10 @@ class DashboardApp(ctk.CTk):
         ]
 
         for text, icon in menu_items:
-            btn = ctk.CTkButton(self.sidebar, text=text, width=160, anchor="w", 
-                                image=self.icons[icon], compound="left")
+            if  text == "Socios":
+                btn = ctk.CTkButton(self.sidebar, text=text, width=160, anchor="w", image=self.icons[icon], compound="left",command=self.open_socios_window)
+            else:
+                btn = ctk.CTkButton(self.sidebar, text=text, width=160, anchor="w", image=self.icons[icon], compound="left")
             btn.pack(pady=5, padx=10)
 
         # === MAIN CONTENT ===
@@ -57,8 +59,8 @@ class DashboardApp(ctk.CTk):
         self.main_frame.grid_rowconfigure(1, weight=0, minsize=160)
         self.main_frame.grid_rowconfigure(2, weight=0, minsize=160)
 
-        self.banner_original = Image.open("images/banner_bandera.jpg")
-        self.bg_original = Image.open("images/biblioteca.jpg")
+        self.banner_original = Image.open("vista/images/banner_bandera.jpg")
+        self.bg_original = Image.open("vista/images/biblioteca.jpg")
 
         # Banner
         banner_img = ctk.CTkImage(light_image=self.banner_original, size=(self.winfo_width(), 150))
@@ -118,6 +120,11 @@ class DashboardApp(ctk.CTk):
         label_text = ctk.CTkLabel(frame, text=text, text_color="white",
                                   font=ctk.CTkFont(size=16, weight="bold"))
         label_text.place(relx=0.5, rely=0.6, anchor="center")
+    
+    def open_socios_window(self):
+        self.destroy()
+        import users_list  # Importar el módulo CRUD después del login exitoso
+        users_list.main()
 
 def main():
     app = DashboardApp()
