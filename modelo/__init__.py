@@ -1,5 +1,6 @@
 from .Libro import Libro
 from .Ejemplar import Ejemplar
-from .Usuario import Usuario
+from .Administrador import Administrador
 from .Prestamo import Prestamo
 from .Historial import Historial
+from .Socio import Socio
