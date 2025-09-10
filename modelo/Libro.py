@@ -3,6 +3,7 @@ from sqlalchemy.orm import relationship, Session
 from sqlalchemy.exc import IntegrityError
 from db.Conector import Base
 from modelo.LibroCategoria import libro_categoria
+from modelo.Categoria import Categoria
 
 class Libro(Base):
     __tablename__ = "libros"
