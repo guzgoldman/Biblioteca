@@ -1,8 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from db.Conector import SessionLocal
-from modelo import Prestamo, Usuario, Ejemplar
-from modelo.Administrador import Administrador
+from modelo import Prestamo, Socio, Ejemplar, Administrador
 
 def prestar_por_dni_y_codigo(session: Session, dni: str, codigo_ejemplar: str) -> Prestamo:
     """Crea un préstamo para el ejemplar (por código) a un usuario (por DNI)."""
@@ -12,9 +11,9 @@ def prestar_por_dni_y_codigo(session: Session, dni: str, codigo_ejemplar: str) -
     if not dni or not codigo_ejemplar:
         raise ValueError("DNI y código de ejemplar son obligatorios")
 
-    usuario = session.execute(select(Usuario).where(Usuario.dni == dni)).scalar_one_or_none()
-    if not usuario:
-        raise ValueError(f"Usuario con DNI {dni} no existe")
+    socio = session.execute(select(Socio).where(Socio.dni == dni)).scalar_one_or_none()
+    if not socio:
+        raise ValueError(f"Socio con DNI {dni} no existe")
 
     ejemplar = session.execute(select(Ejemplar).where(Ejemplar.codigo == codigo_ejemplar)).scalar_one_or_none()
     if not ejemplar:
@@ -28,7 +27,7 @@ def prestar_por_dni_y_codigo(session: Session, dni: str, codigo_ejemplar: str) -
     if prestamo_activo:
         raise ValueError("Ya existe un préstamo activo para ese ejemplar")
 
-    prestamo = Prestamo.crear(session, ejemplar, usuario)
+    prestamo = Prestamo.crear(session, ejemplar, socio)
     return prestamo
 
 
