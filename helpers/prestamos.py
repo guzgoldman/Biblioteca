@@ -2,6 +2,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from db.Conector import SessionLocal
 from modelo import Prestamo, Usuario, Ejemplar
+from modelo.Administrador import Administrador
 
 def prestar_por_dni_y_codigo(session: Session, dni: str, codigo_ejemplar: str) -> Prestamo:
     """Crea un préstamo para el ejemplar (por código) a un usuario (por DNI)."""
