@@ -1,19 +1,23 @@
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import customtkinter as ctk
 from PIL import Image
+from sqlalchemy.orm import Session
+from db.Conector import SessionLocal
+from modelo.Socio import Socio
 
-# Configuración inicial
 ctk.set_appearance_mode("light")
 ctk.set_default_color_theme("blue")
 
 
-class DashboardApp(ctk.CTk):
+class UserList(ctk.CTk):
     def __init__(self):
         super().__init__()
 
-        self.title("Biblioteca")
+        self.title("Listado de Socios")
         self.geometry("1000x600")
 
-        # === ICONOS ===
         self.icons = {
             "home": ctk.CTkImage(light_image=Image.open("vista/icons/home.png"), size=(20, 20)),
             "user": ctk.CTkImage(light_image=Image.open("vista/icons/user.png"), size=(20, 20)),
@@ -45,7 +49,7 @@ class DashboardApp(ctk.CTk):
 
         for text, icon in menu_items:
             if  text == "Socios":
-                btn = ctk.CTkButton(self.sidebar, text=text, width=160, anchor="w", image=self.icons[icon], compound="left",command=self.open_socios_window)
+                btn = ctk.CTkButton(self.sidebar, text=text, width=160, anchor="w", image=self.icons[icon], compound="left")
             else:
                 btn = ctk.CTkButton(self.sidebar, text=text, width=160, anchor="w", image=self.icons[icon], compound="left")
             btn.pack(pady=5, padx=10)
@@ -75,12 +79,6 @@ class DashboardApp(ctk.CTk):
         self.banner_label.grid(row=0, column=0, columnspan=3, sticky="nsew")
         self.banner_label.image = banner_img
 
-        # Fondo
-        bg_img = ctk.CTkImage(light_image=self.bg_original, size=(self.winfo_width(), 200))
-        self.bg_label = ctk.CTkLabel(self.main_frame, text="", image=bg_img)
-        self.bg_label.grid(row=1, column=0, columnspan=3, rowspan=2, sticky="nsew")
-        self.bg_label.image = bg_img
-
         # Resize dinámico
         def update_images(event=None):
             width = self.main_frame.winfo_width()
@@ -92,42 +90,36 @@ class DashboardApp(ctk.CTk):
             self.banner_label.image = banner_img
 
             # Fondo rellena debajo del banner
-            bg_height = max(height - 150, 200)
-            bg_img = ctk.CTkImage(light_image=self.bg_original, size=(width, bg_height))
-            self.bg_label.configure(image=bg_img)
-            self.bg_label.image = bg_img
+            #bg_height = max(height - 150, 200)
+            #bg_img = ctk.CTkImage(light_image=self.bg_original, size=(width, bg_height))
+            #self.bg_label.configure(image=bg_img)
+            #self.bg_label.image = bg_img
 
         self.main_frame.bind("<Configure>", update_images)
+        
+        self.socios_frame = ctk.CTkScrollableFrame(self.main_frame, width=700, height=350)
+        self.socios_frame.grid(row=1, column=0, columnspan=3, sticky="nsew", pady=20)
 
+        self.cargar_socios()
 
-        # === CARDS ===
-        self.create_card("3\nLibros", "book", "#3498db", 1, 0)
-        self.create_card("2\nSocios", "user", "#2ecc71", 1, 1)
-        self.create_card("Emitidos: 2", "send", "#2980b9", 1, 2)
-
-        self.create_card("Devueltos: 1", "check", "#27ae60", 2, 0)
-        self.create_card("No Devueltos: 1", "cancel", "#16a085", 2, 1)
-        self.create_card("Fecha: 03/04/2018", "calendar", "#d35400", 2, 2)
-
-    def create_card(self, text, icon, color, row, col):
-        frame = ctk.CTkFrame(self.main_frame, corner_radius=10, fg_color=color, width=160, height=120)
-        frame.grid(row=row, column=col, padx=10, pady=10, sticky="n")
-        frame.lift() 
-
-        label_icon = ctk.CTkLabel(frame, image=self.icons[icon], text="")
-        label_icon.place(relx=0.1, rely=0.2, anchor="w")
-
-        label_text = ctk.CTkLabel(frame, text=text, text_color="white",
-                                  font=ctk.CTkFont(size=16, weight="bold"))
-        label_text.place(relx=0.5, rely=0.6, anchor="center")
-    
-    def open_socios_window(self):
-        self.destroy()
-        import users_list  # Importar el módulo CRUD después del login exitoso
-        users_list.main()
+    def cargar_socios(self):
+        # Encabezados
+        headers = ["DNI", "Nombre", "Apellido", "Dirección"]
+        for col, header in enumerate(headers):
+            label = ctk.CTkLabel(self.socios_frame, text=header, font=ctk.CTkFont(weight="bold"))
+            label.grid(row=0, column=col, padx=10, pady=5, sticky="w")
+        # Cargar datos de la base
+        session: Session = SessionLocal()
+        socios = session.query(Socio).all()
+        for row, socio in enumerate(socios, start=1):
+            ctk.CTkLabel(self.socios_frame, text=socio.dni).grid(row=row, column=0, padx=10, pady=2, sticky="w")
+            ctk.CTkLabel(self.socios_frame, text=socio.nombre).grid(row=row, column=1, padx=10, pady=2, sticky="w")
+            ctk.CTkLabel(self.socios_frame, text=socio.apellido).grid(row=row, column=2, padx=10, pady=2, sticky="w")
+            ctk.CTkLabel(self.socios_frame, text=getattr(socio, "direccion", "")).grid(row=row, column=3, padx=10, pady=2, sticky="w")
+        session.close()
 
 def main():
-    app = DashboardApp()
+    app = UserList()
     app.mainloop()
 
 if __name__ == "__main__":

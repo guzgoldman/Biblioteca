@@ -12,6 +12,6 @@ class Historial(Base):
 
     prestamo_id  = Column(Integer, ForeignKey("prestamos.id", ondelete="SET NULL"), nullable=True)
     ejemplar_id  = Column(Integer, ForeignKey("ejemplares.id", ondelete="SET NULL"), nullable=True)
-    usuario_id   = Column(Integer, ForeignKey("usuarios.id",  ondelete="SET NULL"), nullable=True)
+    socio_id   = Column(Integer, ForeignKey("socios.id",  ondelete="SET NULL"), nullable=True)
 
     prestamo = relationship("Prestamo")

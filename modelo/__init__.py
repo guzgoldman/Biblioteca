@@ -3,3 +3,4 @@ from .Ejemplar import Ejemplar
 from .Administrador import Administrador
 from .Prestamo import Prestamo
 from .Historial import Historial
+from .Socio import Socio
