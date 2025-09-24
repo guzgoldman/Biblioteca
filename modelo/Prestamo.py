@@ -1,7 +1,8 @@
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy import Column, Integer, ForeignKey, DateTime, func
+from sqlalchemy import Column, Integer, ForeignKey, DateTime, func, select
 from sqlalchemy.orm import relationship, Session
 from db.Conector import Base
+from modelo import Ejemplar, Socio
 
 class Prestamo(Base):
     __tablename__ = "prestamos"
@@ -78,6 +79,8 @@ class Prestamo(Base):
                 session.rollback()
                 raise ValueError(f"Error al crear el préstamo: {str(e)}") from e
 
+        prestamo = cls(ejemplar=ejemplar, socio=socio)
+        session.add(prestamo)
         return prestamo
 
     def devolver(self, session: Session, administrador_id: int = None, *, commit: bool = False) -> "Prestamo":
@@ -94,6 +97,19 @@ class Prestamo(Base):
         self.ejemplar.marcar_como_disponible(session)
 
         session.add(self)
+        session.add(self.ejemplar)
+        
+    def obtener_prestamos(self, session: Session):
+        """Recupera todos los préstamos"""
+        prestamos = session.execute(select(Prestamo)).scalars().all()
+        return prestamos
+    
+    def obtener_prestamos_por_socio(self, session: Session, socio_dni: str):
+        """Recupera todos los préstamos de un socio específico por su DNI"""
+        prestamos = session.execute(
+            select(Prestamo).join(Socio).where(Socio.dni == socio_dni)
+        ).scalars().all()
+        return prestamos
         
         if commit:
             try:
