@@ -21,8 +21,8 @@ def validar_login():
         if resultado:
             messagebox.showinfo("Éxito", "Inicio de sesión exitoso.")
             root.destroy()  # Cerrar ventana de login
-            import graphic_interface  # Importar el módulo CRUD después del login exitoso
-            graphic_interface.main()
+            import vista.main_dashboard as main_dashboard  # Importar el módulo CRUD después del login exitoso
+            main_dashboard.main()
         else:
             messagebox.showerror("Error", "Usuario o contraseña incorrectos.")
     except Exception as e:
