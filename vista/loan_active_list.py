@@ -6,7 +6,7 @@ import customtkinter as ctk
 from datetime import date
 from sqlalchemy.orm import Session
 
-from componenentes import BaseWindow
+from componenentes import BaseWindow, Sidebar, default_menu
 from table_widget import Table
 from db.Conector import SessionLocal
 from modelo.Prestamo import Prestamo
@@ -23,7 +23,7 @@ class LoanActiveList(BaseWindow):
             "Escritorio": self.go_dashboard,
             "Socios": self.go_socios,
             "Libros": self.go_books,
-            "Préstamos": self.toggle_prestamos,  # botón padre
+            "Préstamos": self.toggle_prestamos,
             "Salir": self.quit
         }
         # Submenú para Préstamos
@@ -59,7 +59,6 @@ class LoanActiveList(BaseWindow):
     def build_sidebar_with_submenus(self, actions, submenus):
         # helper usando Sidebar mejorado (ver cambios en componenentes.py abajo)
         self.sidebar = None
-        from componenentes import Sidebar, default_menu
         self.sidebar = Sidebar(self.container, self.icons, default_menu(actions), actions=actions, submenus=submenus)
         self.sidebar.grid(row=0, column=0, sticky="ns")
 

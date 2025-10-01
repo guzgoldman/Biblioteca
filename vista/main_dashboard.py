@@ -1,8 +1,5 @@
 # main_dashboard.py
 import customtkinter as ctk
-import users_list
-import books_list
-# import loans_list  # cuando tengas la vista
 from componenentes import BaseWindow, Sidebar, default_menu
 
 ctk.set_appearance_mode("light")
@@ -16,11 +13,17 @@ class mainDashBoard(BaseWindow):
             "Escritorio": self.go_dashboard,
             "Socios": self.go_socios,
             "Libros": self.go_books,
-            "Préstamos": self.go_prestamos,
+            "Préstamos": self.toggle_prestamos,
             "Salir": self.quit
         }
-        self.sidebar = Sidebar(self.container, self.icons, default_menu(actions))
-        self.sidebar.grid(row=0, column=0, sticky="ns")
+        # Submenú para Préstamos
+        submenus = {
+            "Préstamos": [
+                ("Activos", self.go_prestamos_activos),
+                ("Historial", self.go_prestamos_historial)
+            ]
+        }
+        self.build_sidebar_with_submenus(actions, submenus)
 
         self.content_frame = ctk.CTkFrame(self.main_frame, fg_color="transparent")
         self.content_frame.grid(row=1, column=0, sticky="n", pady=20)
@@ -33,6 +36,12 @@ class mainDashBoard(BaseWindow):
         self.create_card("Devueltos: 1", "check", "#27ae60", 1, 0)
         self.create_card("No Devueltos: 1", "cancel", "#16a085", 1, 1)
         self.create_card("Fecha: 03/04/2018", "calendar", "#d35400", 1, 2)
+    
+    def build_sidebar_with_submenus(self, actions, submenus):
+        # helper usando Sidebar mejorado (ver cambios en componenentes.py abajo)
+        self.sidebar = None
+        self.sidebar = Sidebar(self.container, self.icons, default_menu(actions), actions=actions, submenus=submenus)
+        self.sidebar.grid(row=0, column=0, sticky="ns")
 
     def create_card(self, text, icon, color, row, col):
         frame = ctk.CTkFrame(self.content_frame, corner_radius=10, fg_color=color, width=160, height=120)
@@ -47,15 +56,27 @@ class mainDashBoard(BaseWindow):
         mainDashBoard().mainloop()
 
     def go_socios(self):
+        from users_list import UserList
         self.destroy()
-        users_list.main()
+        UserList().mainloop()
 
     def go_books(self):
+        from books_list import BookList
         self.destroy()
-        books_list.main()
+        BookList().mainloop()
 
-    def go_prestamos(self):
-        # Pendiente: vista préstamos
+    def go_prestamos_activos(self):
+        from loan_active_list import LoanActiveList
+        self.destroy()
+        LoanActiveList().mainloop()
+
+    def go_prestamos_historial(self):
+        from loan_history_list import LoanHistoryList
+        self.destroy()
+        LoanHistoryList().mainloop()
+
+    def toggle_prestamos(self):
+        # El Sidebar maneja el despliegue; este método es sólo placeholder para 'Préstamos'
         pass
 
 def main():

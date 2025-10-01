@@ -4,7 +4,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import customtkinter as ctk
 from sqlalchemy.orm import Session
 from datetime import date
-from componenentes import BaseWindow
+from componenentes import BaseWindow, Sidebar, default_menu
 from table_widget import Table
 from db.Conector import SessionLocal
 from modelo.Socio import Socio
@@ -21,10 +21,17 @@ class UserList(BaseWindow):
             "Escritorio": self.go_dashboard,
             "Socios": self.go_socios,
             "Libros": self.go_books,
-            "Préstamos": self.go_prestamos,
+            "Préstamos": self.toggle_prestamos,
             "Salir": self.quit
         }
-        self.build_sidebar(actions)
+        # Submenú para Préstamos
+        submenus = {
+            "Préstamos": [
+                ("Activos", self.go_prestamos_activos),
+                ("Historial", self.go_prestamos_historial)
+            ]
+        }
+        self.build_sidebar_with_submenus(actions, submenus)
 
         # Contenedor
         self.content_frame = ctk.CTkFrame(self.main_frame, fg_color="transparent")
@@ -44,6 +51,12 @@ class UserList(BaseWindow):
         self.table.grid(row=1, column=0, sticky="n")
 
         self.load_data()
+
+    def build_sidebar_with_submenus(self, actions, submenus):
+        # helper usando Sidebar mejorado (ver cambios en componenentes.py abajo)
+        self.sidebar = None
+        self.sidebar = Sidebar(self.container, self.icons, default_menu(actions), actions=actions, submenus=submenus)
+        self.sidebar.grid(row=0, column=0, sticky="ns")
 
     def load_data(self):
         session: Session = SessionLocal()
@@ -84,8 +97,18 @@ class UserList(BaseWindow):
         self.destroy()
         BookList().mainloop()
 
-    def go_prestamos(self):
-        # Pendiente: implementar vista de préstamos
+    def go_prestamos_activos(self):
+        from loan_active_list import LoanActiveList
+        self.destroy()
+        LoanActiveList().mainloop()
+
+    def go_prestamos_historial(self):
+        from loan_history_list import LoanHistoryList
+        self.destroy()
+        LoanHistoryList().mainloop()
+
+    def toggle_prestamos(self):
+        # El Sidebar maneja el despliegue; este método es sólo placeholder para 'Préstamos'
         pass
 
 def main():
