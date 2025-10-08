@@ -28,20 +28,14 @@ def crear_admin_prueba():
         # Crear nuevo administrador
         admin = Administrador.crear(
             session=session,
-            dni="12345678",
-            nombre="Admin",
-            apellido="Sistema",
-            password="admin123",  # La contraseña será hasheada automáticamente
+            dni="43871363",
+            nombre="Héctor",
+            apellido="Guzmán",
+            password="hector123",  # La contraseña será hasheada automáticamente
             commit=True
         )
         
         print("✅ Administrador creado exitosamente!")
-        print(f"   DNI: {admin.dni}")
-        print(f"   Nombre: {admin.nombre} {admin.apellido}")
-        print(f"   Contraseña: admin123")
-        print("\n📝 Usa estas credenciales para iniciar sesión:")
-        print(f"   DNI: 12345678")
-        print(f"   Contraseña: admin123")
         
     except Exception as e:
         print(f"❌ Error al crear administrador: {e}")

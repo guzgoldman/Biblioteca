@@ -148,6 +148,10 @@ class LoginWindow(ctk.CTk):
                 # Buscar administrador por DNI
                 admin = session.query(Administrador).filter_by(dni=dni).first()
                 
+                print(f"Administrador encontrado: {admin}")
+                if admin:
+                    print(f"Nombre: {admin.nombre}, Apellido: {admin.apellido}")
+                
                 if admin and admin.verificar_password(password):
                     # Login exitoso
                     self.admin_autenticado = admin
