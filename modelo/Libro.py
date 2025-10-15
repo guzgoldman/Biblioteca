@@ -11,6 +11,7 @@ class Libro(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     titulo = Column(String(200), nullable=False)
     autor = Column(String(150), nullable=False)
+    isbn = Column(String(20), nullable=False, unique=True)
 
     ejemplares = relationship("Ejemplar", back_populates="libro", cascade="all, delete-orphan")
     categorias = relationship("Categoria", secondary=libro_categoria, back_populates="libros")
@@ -19,20 +20,21 @@ class Libro(Base):
         return f"<Libro id={self.id} titulo={self.titulo!r} autor={self.autor!r}>"
 
     @classmethod
-    def crear(cls, session: Session, titulo: str, autor: str, *, commit: bool = False) -> "Libro":
+    def crear(cls, session: Session, titulo: str, autor: str, isbn: str, *, commit: bool = False) -> "Libro":
         """Crea un nuevo libro. Lanza ValueError si ya existe."""
         titulo = (titulo or "").strip()
         autor = (autor or "").strip()
-        
-        if not titulo or not autor:
-            raise ValueError("Título y autor son obligatorios")
-        
+        isbn = (isbn or "").strip()
+
+        if not titulo or not autor or not isbn:
+            raise ValueError("Título, autor e ISBN son obligatorios")
+
         # Verificar si ya existe un libro con el mismo título y autor
-        existente = session.query(cls).filter_by(titulo=titulo, autor=autor).one_or_none()
+        existente = session.query(cls).filter_by(titulo=titulo, autor=autor, isbn=isbn).one_or_none()
         if existente:
-            raise ValueError(f"Ya existe un libro '{titulo}' del autor '{autor}'")
-        
-        libro = cls(titulo=titulo, autor=autor)
+            raise ValueError(f"Ya existe un libro '{titulo}' del autor '{autor}' con ISBN '{isbn}'")
+
+        libro = cls(titulo=titulo, autor=autor, isbn=isbn)
         session.add(libro)
         
         if commit:
@@ -46,22 +48,23 @@ class Libro(Base):
         return libro
     
     @classmethod
-    def registrar_libro_con_ejemplares(cls, session: Session, titulo: str, autor: str, cantidad: int = 1, *, commit: bool = False) -> "Libro":
+    def registrar_libro_con_ejemplares(cls, session: Session, titulo: str, autor: str, isbn: str, cantidad: int = 1, *, commit: bool = False) -> "Libro":
         """Registra un libro nuevo o usa uno existente y agrega ejemplares."""
         from modelo.Ejemplar import Ejemplar
         
         titulo = (titulo or "").strip()
         autor = (autor or "").strip()
-        
-        if not titulo or not autor:
-            raise ValueError("Título y autor son obligatorios")
-        
+        isbn = (isbn or "").strip()
+
+        if not titulo or not autor or not isbn:
+            raise ValueError("Título, autor e ISBN son obligatorios")
+
         if cantidad < 1:
             raise ValueError("La cantidad debe ser mayor a 0")
-        
-        libro = session.query(cls).filter_by(titulo=titulo, autor=autor).one_or_none()
+
+        libro = session.query(cls).filter_by(titulo=titulo, autor=autor, isbn=isbn).one_or_none()
         if not libro:
-            libro = cls(titulo=titulo, autor=autor)
+            libro = cls(titulo=titulo, autor=autor, isbn=isbn)
             session.add(libro)
             session.flush()
         
@@ -118,15 +121,16 @@ class Libro(Base):
         return libro
     
     @classmethod
-    def buscar_por_titulo_autor(cls, session: Session, titulo: str, autor: str) -> "Libro":
-        """Busca un libro por título y autor."""
+    def buscar_por_titulo_autor_isbn(cls, session: Session, titulo: str, autor: str, isbn: str) -> "Libro":
+        """Busca un libro por título, autor e ISBN."""
         titulo = (titulo or "").strip()
         autor = (autor or "").strip()
-        
-        if not titulo or not autor:
-            raise ValueError("Título y autor son obligatorios")
-        
-        libro = session.query(cls).filter_by(titulo=titulo, autor=autor).one_or_none()
+        isbn = (isbn or "").strip()
+
+        if not titulo or not autor or not isbn:
+            raise ValueError("Título, autor e ISBN son obligatorios")
+
+        libro = session.query(cls).filter_by(titulo=titulo, autor=autor, isbn=isbn).one_or_none()
         if not libro:
-            raise ValueError(f"No existe un libro '{titulo}' del autor '{autor}'")
+            raise ValueError(f"No existe un libro '{titulo}' del autor '{autor}' con ISBN '{isbn}'")
         return libro
