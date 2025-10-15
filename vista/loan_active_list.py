@@ -6,7 +6,7 @@ import customtkinter as ctk
 from datetime import date
 from sqlalchemy.orm import Session
 
-from componenentes import BaseWindow, Sidebar, default_menu
+from vista.componentes import BaseWindow, Sidebar, default_menu
 from table_widget import Table
 from db.Conector import SessionLocal
 from modelo.Prestamo import Prestamo

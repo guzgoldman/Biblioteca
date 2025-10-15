@@ -5,7 +5,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import customtkinter as ctk
 from sqlalchemy.orm import Session
 
-from componenentes import BaseWindow
+from vista.componentes import BaseWindow
 from table_widget import Table
 from db.Conector import SessionLocal
 from modelo.Prestamo import Prestamo
@@ -54,7 +54,7 @@ class LoanHistoryList(BaseWindow):
         self.load_data()
 
     def build_sidebar_with_submenus(self, actions, submenus):
-        from componenentes import Sidebar, default_menu
+        from vista.componentes import Sidebar, default_menu
         self.sidebar = Sidebar(self.container, self.icons, default_menu(actions), actions=actions, submenus=submenus)
         self.sidebar.grid(row=0, column=0, sticky="ns")
 

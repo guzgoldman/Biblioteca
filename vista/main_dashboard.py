@@ -1,223 +1,147 @@
-# main_dashboard.py
 import customtkinter as ctk
-from componenentes import BaseWindow, Sidebar, default_menu
-from dashboard_stats import DashboardStats
+import os
+from PIL import Image
+from componentes import AppLayout, BaseApp, go_to_dashboard, go_to_users, go_to_books, go_to_loans, go_to_exit
 
-ctk.set_appearance_mode("light")
-ctk.set_default_color_theme("blue")
-
-class mainDashBoard(BaseWindow):
+class MainDashboard(BaseApp):
     def __init__(self):
-        super().__init__(title="Biblioteca - Panel Principal")
+        super().__init__(title="Biblioteca Pública - Dashboard")
 
-        actions = {
-            "Escritorio": self.go_dashboard,
-            "Socios": self.go_socios,
-            "Libros": self.go_books,
-            "Préstamos": self.toggle_prestamos,
-            "Salir": self.quit
+        callbacks = {
+            "Escritorio": lambda: go_to_dashboard(self),
+            "Socios": lambda: go_to_users(self),
+            "Libros": lambda: go_to_books(self),
+            "Préstamos": lambda: go_to_loans(self),
+            "Salir": lambda: go_to_exit(self),
         }
-        # Submenú para Préstamos
-        submenus = {
-            "Préstamos": [
-                ("Activos", self.go_prestamos_activos),
-                ("Historial", self.go_prestamos_historial)
-            ]
-        }
-        self.build_sidebar_with_submenus(actions, submenus)
 
-        # Cargar estadísticas desde la base de datos
-        self.cargar_estadisticas()
+        # Estructura base
+        self.layout = AppLayout(self, banner_image="vista/images/banner_bandera.jpg", callbacks=callbacks)
+        self.layout.pack(fill="both", expand=True)
 
-        self.content_frame = ctk.CTkFrame(self.main_frame, fg_color="transparent")
-        self.content_frame.grid(row=1, column=0, sticky="n", pady=20)
-        for col in range(3):
-            self.content_frame.grid_columnconfigure(col, weight=1)
+        # Proporciones del layout general
+        self.layout.main_frame.grid_rowconfigure(0, weight=0)  # banner
+        self.layout.main_frame.grid_rowconfigure(1, weight=3)  # cards
+        self.layout.main_frame.grid_rowconfigure(2, weight=2)  # gráficos
+        self.layout.main_frame.grid_columnconfigure(0, weight=1)
 
-        # Crear tarjetas con datos reales
-        self.create_card(
-            f"{self.stats['total_libros']}\nLibros", 
-            "book", 
-            "#3498db", 
-            0, 0
-        )
-        self.create_card(
-            f"{self.stats['total_socios']}\nSocios", 
-            "user", 
-            "#2ecc71", 
-            0, 1
-        )
-        self.create_card(
-            f"Emitidos: {self.stats['prestamos_emitidos']}", 
-            "send", 
-            "#2980b9", 
-            0, 2
-        )
-        self.create_card(
-            f"Devueltos: {self.stats['prestamos_devueltos']}", 
-            "check", 
-            "#27ae60", 
-            1, 0
-        )
-        self.create_card(
-            f"Activos: {self.stats['prestamos_activos']}", 
-            "cancel", 
-            "#16a085", 
-            1, 1
-        )
-        self.create_card(
-            f"Fecha: {self.stats['fecha_actual']}", 
-            "calendar", 
-            "#d35400", 
-            1, 2
-        )
-        
-        # Agregar sección de estadísticas adicionales
-        self.crear_seccion_estadisticas_detalladas()
+        self._build_cards()
+        self._build_graph_section()
+
+    # ======================================================
+    def _build_cards(self):
+        """Construye las cards en el main frame."""
+        content = ctk.CTkFrame(self.layout.main_frame, fg_color="transparent")
+        content.grid(row=1, column=0, sticky="nsew", padx=20, pady=(0, 10))
+
+        content.grid_columnconfigure((0, 1), weight=1, uniform="cols")
+        content.grid_rowconfigure((0, 1), weight=1, uniform="rows")
+
+        cards_info = [
+            ("SOCIOS REGISTRADOS", "Alta usuario | Editar usuario", "#3498DB", "people.png"),
+            ("LIBROS CARGADOS", "Cargar libro", "#2ECC71", "book.png"),
+            ("PRÉSTAMOS REALIZADOS", "Nuevo préstamo", "#1ABC9C", "librarian.png"),
+            ("PRÉSTAMOS A VENCER", "Cerrar préstamo", "#E67E22", "calendar.png"),
+        ]
+
+        for idx, (titulo, pie, color, icon_name) in enumerate(cards_info):
+            fila, col = divmod(idx, 2)
+            card = ctk.CTkFrame(content, fg_color=color, corner_radius=15)
+            card.grid(row=fila, column=col, padx=20, pady=20, sticky="nsew")
+            card.grid_propagate(False)
+
+            # Tamaño mínimo coherente
+            card.configure(width=350, height=180)
+
+            # Ícono
+            icon_dir = os.path.join("vista","icons", icon_name)
+            icon_img = None
+            if os.path.exists(icon_dir):
+                img = Image.open(icon_dir).resize((40, 40))
+                icon_img = ctk.CTkImage(light_image=img, size=(40, 40))
+
+            row_frame = ctk.CTkFrame(card, fg_color="transparent")
+            row_frame.pack(pady=(25, 10))
+
+            if icon_img:
+                lbl_icon = ctk.CTkLabel(row_frame, image=icon_img, text="")
+                lbl_icon.image = icon_img
+                lbl_icon.pack(side="left", padx=(0, 10))
+
+            lbl_titulo = ctk.CTkLabel(row_frame, text=titulo, text_color="white",font=ctk.CTkFont(size=20, weight="bold"))
+            lbl_titulo.pack(side="left")
+            
+            # Footer común
+            footer_frame = ctk.CTkFrame(card, fg_color="transparent")
+            footer_frame.pack(side="bottom", fill="x", pady=(0, 10))
     
-    def crear_seccion_estadisticas_detalladas(self):
-        """Crea una sección con estadísticas más detalladas."""
-        stats_detail_frame = ctk.CTkFrame(self.main_frame, corner_radius=10, fg_color="#ecf0f1")
-        stats_detail_frame.grid(row=2, column=0, sticky="ew", pady=20, padx=40)
-        
-        # Título de la sección
-        title_label = ctk.CTkLabel(
-            stats_detail_frame, 
-            text="📊 Estadísticas Detalladas del Sistema", 
-            font=ctk.CTkFont(size=18, weight="bold"),
-            text_color="#2c3e50"
-        )
-        title_label.pack(pady=(15, 10))
-        
-        # Frame para las estadísticas
-        stats_info_frame = ctk.CTkFrame(stats_detail_frame, fg_color="transparent")
-        stats_info_frame.pack(pady=10, padx=20, fill="both")
-        
-        # Configurar columnas
-        stats_info_frame.grid_columnconfigure(0, weight=1)
-        stats_info_frame.grid_columnconfigure(1, weight=1)
-        
-        # Información de libros y ejemplares
-        libros_info = f"📚 Total de Libros: {self.stats['total_libros']} | Ejemplares: {self.stats['total_ejemplares']}"
-        libros_label = ctk.CTkLabel(
-            stats_info_frame, 
-            text=libros_info, 
-            font=ctk.CTkFont(size=13),
-            text_color="#34495e"
-        )
-        libros_label.grid(row=0, column=0, sticky="w", pady=5, padx=10)
-        
-        # Información de socios
-        socios_info = f"👥 Total de Socios: {self.stats['total_socios']}"
-        socios_label = ctk.CTkLabel(
-            stats_info_frame, 
-            text=socios_info, 
-            font=ctk.CTkFont(size=13),
-            text_color="#34495e"
-        )
-        socios_label.grid(row=0, column=1, sticky="w", pady=5, padx=10)
-        
-        # Información de préstamos
-        prestamos_info = f"📤 Préstamos Totales: {self.stats['prestamos_emitidos']} | Activos: {self.stats['prestamos_activos']} | Devueltos: {self.stats['prestamos_devueltos']}"
-        prestamos_label = ctk.CTkLabel(
-            stats_info_frame, 
-            text=prestamos_info, 
-            font=ctk.CTkFont(size=13),
-            text_color="#34495e"
-        )
-        prestamos_label.grid(row=1, column=0, columnspan=2, sticky="w", pady=5, padx=10)
-        
-        # Alerta de préstamos vencidos (si hay)
-        if self.stats['prestamos_vencidos'] > 0:
-            vencidos_info = f"⚠️ ATENCIÓN: {self.stats['prestamos_vencidos']} préstamos vencidos"
-            vencidos_label = ctk.CTkLabel(
-                stats_info_frame, 
-                text=vencidos_info, 
-                font=ctk.CTkFont(size=13, weight="bold"),
-                text_color="#e74c3c"
-            )
-            vencidos_label.grid(row=2, column=0, columnspan=2, sticky="w", pady=5, padx=10)
-        
-        # Botón de actualizar
-        refresh_btn = ctk.CTkButton(
-            stats_detail_frame,
-            text="🔄 Actualizar Estadísticas",
-            command=self.actualizar_dashboard,
-            fg_color="#3498db",
-            hover_color="#2980b9",
-            corner_radius=8,
-            height=35
-        )
-        refresh_btn.pack(pady=(10, 15))
+            separator = ctk.CTkFrame(footer_frame, fg_color="#D5D8DC", height=2, corner_radius=0)
+            separator.pack(fill="x", padx=20, pady=(0, 6))
     
-    def cargar_estadisticas(self):
-        """Carga las estadísticas desde la base de datos."""
-        try:
-            self.stats = DashboardStats.obtener_todas_estadisticas()
-        except Exception as e:
-            print(f"Error al cargar estadísticas: {e}")
-            # Valores por defecto en caso de error
-            self.stats = {
-                'total_libros': 0,
-                'total_ejemplares': 0,
-                'total_socios': 0,
-                'prestamos_emitidos': 0,
-                'prestamos_activos': 0,
-                'prestamos_devueltos': 0,
-                'prestamos_vencidos': 0,
-                'fecha_actual': DashboardStats.obtener_fecha_actual()
-            }
+            # Si hay múltiples opciones en el pie, mostrarlas como enlaces separados
+            if "|" in pie:
+                opciones = [x.strip() for x in pie.split("|")]
     
-    def actualizar_dashboard(self):
-        """Actualiza el dashboard recargando la ventana con datos frescos."""
-        self.destroy()
-        mainDashBoard().mainloop()
+                links_frame = ctk.CTkFrame(footer_frame, fg_color="transparent")
+                links_frame.pack()
     
-    def build_sidebar_with_submenus(self, actions, submenus):
-        # helper usando Sidebar mejorado (ver cambios en componenentes.py abajo)
-        self.sidebar = None
-        self.sidebar = Sidebar(self.container, self.icons, default_menu(actions), actions=actions, submenus=submenus)
-        self.sidebar.grid(row=0, column=0, sticky="ns")
+                for opcion in opciones:
+                    link = ctk.CTkLabel(links_frame,
+                                        text=opcion,
+                                        text_color="white",
+                                        font=ctk.CTkFont(size=14, weight="bold"),
+                                        cursor="hand2")
+                    link.pack(side="left", padx=10)
+    
+                    # Enlace individual con función fija
+                    texto = opcion.lower()
+                    if "alta" in texto:
+                        link.bind("<Button-1>", lambda e, opt=opcion: self._open_new_user())
+                        print(link)
+                    elif "editar" in texto:
+                        link.bind("<Button-1>", lambda e, opt=opcion: self._open_edit_user())
+                        print(link)
+            else:
+                # Pie normal (una sola opción)
+                lbl_pie = ctk.CTkLabel(footer_frame, text=pie, text_color="white",
+                                       font=ctk.CTkFont(size=14, weight="bold"),
+                                       cursor="hand2")
+                lbl_pie.pack()
+    
+                if "libro" in pie.lower():
+                    lbl_pie.bind("<Button-1>", lambda e: self._open_new_book())
 
-    def create_card(self, text, icon, color, row, col):
-        frame = ctk.CTkFrame(self.content_frame, corner_radius=10, fg_color=color, width=160, height=120)
-        frame.grid(row=row, column=col, padx=10, pady=10, sticky="n")
-        if self.icons.get(icon):
-            ctk.CTkLabel(frame, image=self.icons[icon], text="").place(relx=0.1, rely=0.2, anchor="w")
-        ctk.CTkLabel(frame, text=text, text_color="white", font=ctk.CTkFont(size=16, weight="bold")).place(relx=0.5, rely=0.6, anchor="center")
 
-    # Navegación
-    def go_dashboard(self):
-        self.destroy()
-        mainDashBoard().mainloop()
+    # ======================================================
+    def _build_graph_section(self):
+        """Frame inferior para gráficos."""
+        graph_frame = ctk.CTkFrame(self.layout.main_frame, fg_color="#ECF0F1", corner_radius=15)
+        graph_frame.grid(row=2, column=0, sticky="nsew", padx=20, pady=(0, 20))
 
-    def go_socios(self):
-        from users_list import UserList
-        self.destroy()
-        UserList().mainloop()
+        lbl = ctk.CTkLabel(graph_frame, text="Agregar graficos???",
+                           font=ctk.CTkFont(size=16, weight="bold"),
+                           text_color="#2C3E50")
+        lbl.pack(pady=20)
+    
+    def _open_new_user(self):
+        """Abre la vista de alta de usuario."""
+        self.destroy()  # Cierra la ventana actual
+        from new_user import NewUser
+        NewUser()  # Abre la nueva vista
+    
+    def _open_edit_user(self):
+        """Abre la vista de edición de usuario."""
+        self.destroy()  # Cierra la ventana actual
+        from edit_user import EditUser
+        EditUser()  # Abre la nueva vista
+    
+    def _open_new_book(self):
+        """Abre la vista de alta de libros."""
+        self.destroy()  # Cierra la ventana actual
+        from new_book import NewBook
+        NewBook()  # Abre la nueva vista
 
-    def go_books(self):
-        from books_list import BookList
-        self.destroy()
-        BookList().mainloop()
-
-    def go_prestamos_activos(self):
-        from loan_active_list import LoanActiveList
-        self.destroy()
-        LoanActiveList().mainloop()
-
-    def go_prestamos_historial(self):
-        from loan_history_list import LoanHistoryList
-        self.destroy()
-        LoanHistoryList().mainloop()
-
-    def toggle_prestamos(self):
-        # El Sidebar maneja el despliegue; este método es sólo placeholder para 'Préstamos'
-        pass
-
-def main():
-    app = mainDashBoard()
-    app.mainloop()
 
 if __name__ == "__main__":
-    main()
+    app = MainDashboard()
+    app.mainloop()
