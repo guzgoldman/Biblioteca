@@ -1,20 +1,13 @@
 import customtkinter as ctk
 from tkinter import messagebox
-from componentes import BaseApp, AppLayout, go_to_dashboard, go_to_users, go_to_loans, go_to_exit,go_to_books
+from componentes import BaseApp, AppLayout, get_default_callbacks
 
 
 class NewBook(BaseApp):
     def __init__(self):
         super().__init__(title="Nuevo Libro - Biblioteca Pública")
 
-        # Callbacks del menú lateral
-        callbacks = {
-            "Escritorio": self._go_dashboard,
-            "Socios": go_to_users,
-            "Libros": go_to_books,  # vista actual
-            "Préstamos": go_to_loans,
-            "Salir": go_to_exit,
-        }
+        callbacks = get_default_callbacks(self)
 
         # Layout base (banner + sidebar)
         self.layout = AppLayout(self, banner_image="vistas/assets/banner.jpg", callbacks=callbacks)

@@ -3,6 +3,7 @@ from PIL import Image
 from datetime import datetime
 import os
 import tkinter.ttk as ttk
+from dashboard_stats import DashboardStats
 
 class BaseApp(ctk.CTk):
     """Ventana base para todas las vistas: pantalla completa por defecto."""
@@ -145,7 +146,7 @@ class Sidebar(ctk.CTkFrame):
         lbl_user.pack()
 
         lbl_date = ctk.CTkLabel(self,
-                                text=f"Logueado: {datetime.now().strftime('%d/%m/%Y %H:%M')}",
+                                text=f"Logueado: {DashboardStats.obtener_fecha_actual()}",
                                 font=ctk.CTkFont(size=14),
                                 text_color="#D5D8DC")
         lbl_date.pack(pady=(0, 15))
@@ -208,6 +209,22 @@ class AppLayout(ctk.CTkFrame):
             info = widget.grid_info()
             if info.get("row") != 0:  # deja el banner
                 widget.destroy()
+
+# ==========================================================
+#   CALLBACKS COMUNES PARA TODAS LAS VISTAS
+# ==========================================================
+def get_default_callbacks(app):
+    """Devuelve el diccionario de callbacks comunes para todas las vistas."""
+    from componentes import go_to_dashboard, go_to_users, go_to_books, go_to_loans, go_to_exit
+
+    return {
+        "Escritorio": lambda: go_to_dashboard(app),
+        "Socios": lambda: go_to_users(app),
+        "Libros": lambda: go_to_books(app),
+        "Préstamos": lambda: go_to_loans(app),
+        "Salir": lambda: go_to_exit(app),
+    }
+
 
 # ==========================================================
 #   TABLA

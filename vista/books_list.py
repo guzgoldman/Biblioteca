@@ -3,7 +3,7 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 import customtkinter as ctk
 from datetime import date
-from componentes import AppLayout, BaseApp, go_to_dashboard, go_to_users, go_to_books, go_to_loans, go_to_exit, Table
+from componentes import AppLayout, BaseApp, Table, get_default_callbacks
 from db.Conector import SessionLocal
 from modelo.Libro import Libro
 from modelo.Ejemplar import Ejemplar
@@ -12,13 +12,7 @@ class BookList(BaseApp):
     def __init__(self):
         super().__init__(title="Biblioteca Pública - Socios")
 
-        callbacks = {
-            "Escritorio": lambda: go_to_dashboard(self),
-            "Socios": lambda: go_to_users(self),
-            "Libros": lambda: go_to_books(self),
-            "Préstamos": lambda: go_to_loans(self),
-            "Salir": lambda: go_to_exit(self),
-        }
+        callbacks = get_default_callbacks(self)
 
         # Estructura base
         self.layout = AppLayout(self, banner_image="vista/images/banner_bandera.jpg", callbacks=callbacks)

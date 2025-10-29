@@ -1,18 +1,11 @@
 import customtkinter as ctk
-from componentes import BaseApp, AppLayout, go_to_dashboard,go_to_users, go_to_books, go_to_loans, go_to_exit
+from componentes import BaseApp, AppLayout, get_default_callbacks
 
 class NewUser(BaseApp):
     def __init__(self):
         super().__init__(title="Nuevo Usuario - Biblioteca Pública")
 
-        # Callbacks del menú lateral
-        callbacks = {
-            "Escritorio": self._go_dashboard,
-            "Socios": go_to_users,  # Podrías agregar más vistas luego
-            "Libros": go_to_books,
-            "Préstamos": go_to_loans,
-            "Salir": go_to_exit,
-        }
+        callbacks = get_default_callbacks(self)
 
         # Layout base
         self.layout = AppLayout(self, banner_image="vistas/assets/banner.jpg", callbacks=callbacks)

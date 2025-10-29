@@ -153,7 +153,7 @@ class DashboardStats:
     @staticmethod
     def obtener_fecha_actual() -> str:
         """Obtiene la fecha actual formateada."""
-        return datetime.now().strftime("%d/%m/%Y")
+        return datetime.now().strftime('%d/%m/%Y %H:%M')
     
     @staticmethod
     def obtener_todas_estadisticas() -> dict:

@@ -1,19 +1,14 @@
 import customtkinter as ctk
 import os
 from PIL import Image
-from componentes import AppLayout, BaseApp, go_to_dashboard, go_to_users, go_to_books, go_to_loans, go_to_exit
+from componentes import AppLayout, BaseApp, get_default_callbacks
+from dashboard_stats import DashboardStats
 
 class MainDashboard(BaseApp):
     def __init__(self):
         super().__init__(title="Biblioteca Pública - Dashboard")
 
-        callbacks = {
-            "Escritorio": lambda: go_to_dashboard(self),
-            "Socios": lambda: go_to_users(self),
-            "Libros": lambda: go_to_books(self),
-            "Préstamos": lambda: go_to_loans(self),
-            "Salir": lambda: go_to_exit(self),
-        }
+        callbacks = get_default_callbacks(self)
 
         # Estructura base
         self.layout = AppLayout(self, banner_image="vista/images/banner_bandera.jpg", callbacks=callbacks)
@@ -71,6 +66,24 @@ class MainDashboard(BaseApp):
             lbl_titulo = ctk.CTkLabel(row_frame, text=titulo, text_color="white",font=ctk.CTkFont(size=20, weight="bold"))
             lbl_titulo.pack(side="left")
             
+            if titulo == 'SOCIOS REGISTRADOS':
+                cant_socios = DashboardStats.obtener_total_socios()
+                lbl_cantidad = ctk.CTkLabel(card, text=str(cant_socios), text_color="white",font=ctk.CTkFont(size=48, weight="bold"))
+                lbl_cantidad.pack(pady=(10, 0))
+            elif titulo == 'LIBROS CARGADOS':
+                cant_libros = DashboardStats.obtener_total_libros()
+                lbl_cantidad = ctk.CTkLabel(card, text=str(cant_libros), text_color="white",font=ctk.CTkFont(size=48, weight="bold"))
+                lbl_cantidad.pack(pady=(10, 0))
+            elif titulo == 'PRÉSTAMOS REALIZADOS':
+                cant_prestamos = DashboardStats.obtener_prestamos_emitidos()
+                lbl_cantidad = ctk.CTkLabel(card, text=str(cant_prestamos), text_color="white",font=ctk.CTkFont(size=48, weight="bold"))
+                lbl_cantidad.pack(pady=(10, 0))
+            else:
+                cant_prestamos_vencer = DashboardStats.obtener_prestamos_activos()
+                lbl_cantidad = ctk.CTkLabel(card, text=str(cant_prestamos_vencer), text_color="white",font=ctk.CTkFont(size=48, weight="bold"))
+                lbl_cantidad.pack(pady=(10, 0))
+            
+                        
             # Footer común
             footer_frame = ctk.CTkFrame(card, fg_color="transparent")
             footer_frame.pack(side="bottom", fill="x", pady=(0, 10))
@@ -87,20 +100,18 @@ class MainDashboard(BaseApp):
     
                 for opcion in opciones:
                     link = ctk.CTkLabel(links_frame,
-                                        text=opcion,
-                                        text_color="white",
-                                        font=ctk.CTkFont(size=14, weight="bold"),
-                                        cursor="hand2")
+                        text=opcion,
+                        text_color="white",
+                        font=ctk.CTkFont(size=14, weight="bold"),
+                        cursor="hand2")
                     link.pack(side="left", padx=10)
     
                     # Enlace individual con función fija
                     texto = opcion.lower()
                     if "alta" in texto:
                         link.bind("<Button-1>", lambda e, opt=opcion: self._open_new_user())
-                        print(link)
                     elif "editar" in texto:
                         link.bind("<Button-1>", lambda e, opt=opcion: self._open_edit_user())
-                        print(link)
             else:
                 # Pie normal (una sola opción)
                 lbl_pie = ctk.CTkLabel(footer_frame, text=pie, text_color="white",
@@ -118,28 +129,26 @@ class MainDashboard(BaseApp):
         graph_frame = ctk.CTkFrame(self.layout.main_frame, fg_color="#ECF0F1", corner_radius=15)
         graph_frame.grid(row=2, column=0, sticky="nsew", padx=20, pady=(0, 20))
 
-        lbl = ctk.CTkLabel(graph_frame, text="Agregar graficos???",
-                           font=ctk.CTkFont(size=16, weight="bold"),
-                           text_color="#2C3E50")
+        lbl = ctk.CTkLabel(graph_frame, text="Agregar graficos???",font=ctk.CTkFont(size=16, weight="bold"),text_color="#2C3E50")
         lbl.pack(pady=20)
     
     def _open_new_user(self):
         """Abre la vista de alta de usuario."""
-        self.destroy()  # Cierra la ventana actual
+        self.destroy()
         from new_user import NewUser
-        NewUser()  # Abre la nueva vista
+        NewUser()
     
     def _open_edit_user(self):
         """Abre la vista de edición de usuario."""
-        self.destroy()  # Cierra la ventana actual
+        self.destroy()
         from edit_user import EditUser
-        EditUser()  # Abre la nueva vista
+        EditUser()
     
     def _open_new_book(self):
         """Abre la vista de alta de libros."""
-        self.destroy()  # Cierra la ventana actual
+        self.destroy()
         from new_book import NewBook
-        NewBook()  # Abre la nueva vista
+        NewBook()
 
 
 if __name__ == "__main__":
