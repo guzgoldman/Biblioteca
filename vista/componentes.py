@@ -4,12 +4,17 @@ from datetime import datetime
 import os
 import tkinter.ttk as ttk
 from dashboard_stats import DashboardStats
+from db.Conector import Conector
 
 class BaseApp(ctk.CTk):
     """Ventana base para todas las vistas: pantalla completa por defecto."""
     def __init__(self, title="Biblioteca Pública"):
         super().__init__()
         self.title(title)
+        
+        # Inicializar sesión de base de datos
+        self.session = Conector.get_session()
+        
         self.after(100, lambda: self._set_fullscreen())
 
     def _set_fullscreen(self):
@@ -185,6 +190,9 @@ class AppLayout(ctk.CTkFrame):
         super().__init__(master, **kwargs)
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(0, weight=1)
+        
+        # Obtener la sesión desde la ventana principal
+        self.session = master.session if hasattr(master, 'session') else None
 
         # Carga de íconos y menú
         self.icons = load_icons()
