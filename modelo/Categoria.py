@@ -1,19 +1,29 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, String
 from sqlalchemy.orm import relationship, Session
 from sqlalchemy.exc import IntegrityError
-from modelo.LibroCategoria import libro_categoria
 from db.Conector import Base
 
 class Categoria(Base):
     __tablename__ = "categorias"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    nombre = Column(String(100), unique=True, nullable=False)
-    
-    libros = relationship('Libro', secondary=libro_categoria, back_populates='categorias')
-    
-    def __repr__(self):
-        return f"<Categoria id={self.id} nombre={self.nombre}>"
+    code = Column(String(50), primary_key=True)
+    nombre = Column(String(100), nullable=False)
+
+    # Relación directa con LibroCategoria
+    libros_rel = relationship(
+        "LibroCategoria",
+        back_populates="categoria",
+        cascade="all, delete-orphan"
+    )
+
+    # Acceso indirecto a Libros
+    libros = relationship(
+        "Libro",
+        secondary="libro_categoria",
+        primaryjoin="Categoria.code==LibroCategoria.categoria_code",
+        secondaryjoin="LibroCategoria.libro_isbn==Libro.isbn",
+        viewonly=True
+    )
     
     @classmethod
     def crear(cls, session: Session, nombre: str, *, commit: bool = False) -> "Categoria":

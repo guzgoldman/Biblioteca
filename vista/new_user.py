@@ -1,11 +1,13 @@
 import customtkinter as ctk
 from CTkMessagebox import CTkMessagebox
-from componentes import BaseApp, AppLayout, get_default_callbacks
+from vista.componentes.base_app import BaseApp
+from vista.componentes.layout import AppLayout
+from vista.componentes.callbacks import get_default_callbacks
 from modelo.Socio import Socio
 
 
 class NewUser(BaseApp):
-    def __init__(self):
+    def __init__(self, session=None, admin=None):
         super().__init__(title="Nuevo Usuario - Biblioteca Pública")
 
         callbacks = get_default_callbacks(self)

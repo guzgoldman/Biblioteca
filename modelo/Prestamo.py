@@ -1,5 +1,5 @@
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy import Column, Integer, ForeignKey, DateTime, func, select
+from sqlalchemy import Column, Integer, ForeignKey, DateTime, String, func, select
 from sqlalchemy.orm import relationship, Session
 from db.Conector import Base
 from modelo import Ejemplar, Socio
@@ -8,9 +8,9 @@ class Prestamo(Base):
     __tablename__ = "prestamos"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    ejemplar_id = Column(Integer, ForeignKey("ejemplares.id", ondelete="RESTRICT"), nullable=False, index=True)
-    socio_id = Column(Integer, ForeignKey("socios.id", ondelete="RESTRICT"), nullable=False, index=True)
-    administrador_id = Column(Integer, ForeignKey("administradores.id", ondelete="RESTRICT"), nullable=False, index=True)
+    ejemplar_id = Column(String, ForeignKey("ejemplares.codigo", ondelete="RESTRICT"), nullable=False, index=True)
+    socio_id = Column(Integer, ForeignKey("socios.dni", ondelete="RESTRICT"), nullable=False, index=True)
+    administrador_id = Column(Integer, ForeignKey("administradores.dni", ondelete="RESTRICT"), nullable=False, index=True)
     fecha_prestamo = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
     fecha_devolucion_pactada = Column(DateTime(timezone=True), nullable=False)
     fecha_devolucion = Column(DateTime(timezone=True), nullable=True)
@@ -25,49 +25,49 @@ class Prestamo(Base):
     @classmethod
     def crear(cls, session: Session, ejemplar_id: int, socio_id: int, administrador_id: int, dias_prestamo: int, *, commit: bool = False) -> "Prestamo":
         """Genera un préstamo si el ejemplar está disponible. Calcula la fecha de devolución basándose en los días especificados."""
-        from modelo.Ejemplar import Ejemplar  # Import aquí para evitar imports circulares
+        from modelo.Ejemplar import Ejemplar
         from modelo.Socio import Socio
         from modelo.Administrador import Administrador
         from datetime import datetime, timedelta
-        
+
         # Validar días de préstamo
         if dias_prestamo < 1:
             raise ValueError("Los días de préstamo deben ser mayor a 0")
-        
-        if dias_prestamo > 30:  # Límite máximo de préstamo
+        if dias_prestamo > 30:
             raise ValueError("No se pueden prestar libros por más de 30 días")
-        
-        # Verificar que el ejemplar existe y está disponible
+
+        # Verificar existencia y disponibilidad
         ejemplar = session.query(Ejemplar).filter_by(id=ejemplar_id).one_or_none()
         if not ejemplar:
             raise ValueError(f"No existe un ejemplar con ID {ejemplar_id}")
-        
         if not ejemplar.disponible:
             raise ValueError("El ejemplar no está disponible para préstamo")
-        
-        # Verificar que el socio existe
+
         socio = session.query(Socio).filter_by(id=socio_id).one_or_none()
         if not socio:
             raise ValueError(f"No existe un socio con ID {socio_id}")
-        
-        # Verificar que el administrador existe
+
         administrador = session.query(Administrador).filter_by(id=administrador_id).one_or_none()
         if not administrador:
             raise ValueError(f"No existe un administrador con ID {administrador_id}")
-        
-        # Calcular fecha de devolución pactada
+
+        # Calcular fechas
         fecha_prestamo = datetime.now()
         fecha_devolucion_pactada = fecha_prestamo + timedelta(days=dias_prestamo)
-        
-        # Marcar el ejemplar como no disponible
+
+        # Marcar ejemplar como no disponible
         ejemplar.marcar_como_prestado(session)
-        
-        # Crear el préstamo
+
+        # Crear un único préstamo correctamente vinculado
         prestamo = cls(
             ejemplar_id=ejemplar_id,
             socio_id=socio_id,
             administrador_id=administrador_id,
-            fecha_devolucion_pactada=fecha_devolucion_pactada
+            fecha_prestamo=fecha_prestamo,
+            fecha_devolucion_pactada=fecha_devolucion_pactada,
+            ejemplar=ejemplar,
+            socio=socio,
+            administrador=administrador
         )
         session.add(prestamo)
 
@@ -79,9 +79,8 @@ class Prestamo(Base):
                 session.rollback()
                 raise ValueError(f"Error al crear el préstamo: {str(e)}") from e
 
-        prestamo = cls(ejemplar=ejemplar, socio=socio)
-        session.add(prestamo)
         return prestamo
+
 
     def devolver(self, session: Session, administrador_id: int = None, *, commit: bool = False) -> "Prestamo":
         """Marca el préstamo como devuelto y libera el ejemplar"""

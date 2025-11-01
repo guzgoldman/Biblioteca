@@ -8,7 +8,7 @@ class Administrador(Base):
     __tablename__ = "administradores"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    dni = Column(String(20), unique=True, nullable=False, index=True)
+    dni = Column(Integer, unique=True, nullable=False, index=True)
     nombre = Column(String(100), nullable=False)
     apellido = Column(String(100), nullable=False)
     password = Column(String(255), nullable=False)
@@ -22,6 +22,7 @@ class Administrador(Base):
     def verificar_password(self, password: str) -> bool:
         """Verifica si el password proporcionado coincide con el hash almacenado."""
         password_hash = hashlib.sha256(password.encode('utf-8')).hexdigest()
+        print(self.password, password_hash)
         return self.password == password_hash
 
     @classmethod

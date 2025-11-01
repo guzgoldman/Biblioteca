@@ -1,10 +1,10 @@
 import customtkinter as ctk
 from tkinter import messagebox
-from componentes import BaseApp, AppLayout, get_default_callbacks
+from vista.componentes.componentes import BaseApp, AppLayout, get_default_callbacks
 
 
 class NewBook(BaseApp):
-    def __init__(self):
+    def __init__(self, session=None, admin=None):
         super().__init__(title="Nuevo Libro - Biblioteca Pública")
 
         callbacks = get_default_callbacks(self)

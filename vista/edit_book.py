@@ -4,9 +4,9 @@ from vista.componentes.componentes import BaseApp, AppLayout, get_default_callba
 from modelo.Socio import Socio  # Ajustá la importación según tu estructura real
 
 
-class EditUser(BaseApp):
+class EditBook(BaseApp):
     def __init__(self, session=None, admin=None):
-        super().__init__(title="Editar Socio - Biblioteca Pública")
+        super().__init__(title="Editar Libro - Biblioteca Pública")
 
         callbacks = get_default_callbacks(self)
 

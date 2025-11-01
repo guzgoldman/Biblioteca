@@ -1,154 +1,128 @@
 import customtkinter as ctk
 import os
-from PIL import Image
-from componentes import AppLayout, BaseApp, get_default_callbacks
-from dashboard_stats import DashboardStats
+
+# Import modular de componentes
+from vista.componentes.base_app import BaseApp
+from vista.componentes.layout import AppLayout
+from vista.componentes.callbacks import get_default_callbacks
+from vista.componentes.dashboard_cards import DashboardCards
+from vista.componentes.dashboard_stats import DashboardStats
+
 
 class MainDashboard(BaseApp):
-    def __init__(self):
+    """Vista principal del panel de control del sistema de biblioteca."""
+
+    def __init__(self, session=None, admin=None):
         super().__init__(title="Biblioteca Pública - Dashboard")
 
-        callbacks = get_default_callbacks(self)
+        self.session = session
+        self.admin = admin
 
-        # Estructura base
-        self.layout = AppLayout(self, banner_image="vista/images/banner_bandera.jpg", callbacks=callbacks)
+        callbacks = get_default_callbacks(self)
+        banner_path = os.path.join("vista", "images", "banner_bandera.jpg")
+
+        # Layout base
+        self.layout = AppLayout(self, banner_image=banner_path, callbacks=callbacks, admin=self.admin)
         self.layout.pack(fill="both", expand=True)
 
-        # Proporciones del layout general
-        self.layout.main_frame.grid_rowconfigure(0, weight=0)  # banner
-        self.layout.main_frame.grid_rowconfigure(1, weight=3)  # cards
-        self.layout.main_frame.grid_rowconfigure(2, weight=2)  # gráficos
+        # Proporciones
+        self.layout.main_frame.grid_rowconfigure(0, weight=0)
+        self.layout.main_frame.grid_rowconfigure(1, weight=3)
+        self.layout.main_frame.grid_rowconfigure(2, weight=2)
         self.layout.main_frame.grid_columnconfigure(0, weight=1)
 
-        self._build_cards()
+        # Crear componente de cards
+        self._build_cards_component()
+        # Crear sección inferior (gráficos)
         self._build_graph_section()
 
     # ======================================================
-    def _build_cards(self):
-        """Construye las cards en el main frame."""
-        content = ctk.CTkFrame(self.layout.main_frame, fg_color="transparent")
-        content.grid(row=1, column=0, sticky="nsew", padx=20, pady=(0, 10))
-
-        content.grid_columnconfigure((0, 1), weight=1, uniform="cols")
-        content.grid_rowconfigure((0, 1), weight=1, uniform="rows")
-
+    def _build_cards_component(self):
+        """Crea el componente de cards y luego las rellena."""
         cards_info = [
-            ("SOCIOS REGISTRADOS", "Alta usuario | Editar usuario", "#3498DB", "people.png"),
-            ("LIBROS CARGADOS", "Cargar libro", "#2ECC71", "book.png"),
-            ("PRÉSTAMOS REALIZADOS", "Nuevo préstamo", "#1ABC9C", "librarian.png"),
-            ("PRÉSTAMOS A VENCER", "Cerrar préstamo", "#E67E22", "calendar.png"),
+            {"titulo": "SOCIOS REGISTRADOS", "pie": "Alta usuario | Editar usuario", "color": "#3498DB", "icon": "people.png"},
+            {"titulo": "LIBROS CARGADOS", "pie": "Cargar libro | Editar Libro", "color": "#2ECC71", "icon": "book.png"},
+            {"titulo": "PRÉSTAMOS REALIZADOS", "pie": "Nuevo préstamo", "color": "#1ABC9C", "icon": "librarian.png"},
+            {"titulo": "PRÉSTAMOS A VENCER", "pie": "Cerrar préstamo", "color": "#E67E22", "icon": "calendar.png"},
         ]
 
-        for idx, (titulo, pie, color, icon_name) in enumerate(cards_info):
-            fila, col = divmod(idx, 2)
-            card = ctk.CTkFrame(content, fg_color=color, corner_radius=15)
-            card.grid(row=fila, column=col, padx=20, pady=20, sticky="nsew")
-            card.grid_propagate(False)
+        self.cards_component = DashboardCards(self.layout.main_frame, cards_info=cards_info)
+        self.cards_component.grid(row=1, column=0, sticky="nsew", padx=20, pady=(0, 10))
 
-            # Tamaño mínimo coherente
-            card.configure(width=350, height=180)
+        self._rellenar_cards()
 
-            # Ícono
-            icon_dir = os.path.join("vista","icons", icon_name)
-            icon_img = None
-            if os.path.exists(icon_dir):
-                img = Image.open(icon_dir).resize((40, 40))
-                icon_img = ctk.CTkImage(light_image=img, size=(40, 40))
+    # ======================================================
+    def _rellenar_cards(self):
+        """Rellena las métricas de las cards y asigna eventos."""
+        metricas = {
+    "SOCIOS REGISTRADOS": DashboardStats.obtener_total_socios(self.session),
+    "LIBROS CARGADOS": DashboardStats.obtener_total_libros(self.session),
+    "PRÉSTAMOS REALIZADOS": DashboardStats.obtener_prestamos_emitidos(self.session),
+    "PRÉSTAMOS A VENCER": DashboardStats.obtener_prestamos_activos(self.session),
+    }
 
-            row_frame = ctk.CTkFrame(card, fg_color="transparent")
-            row_frame.pack(pady=(25, 10))
 
-            if icon_img:
-                lbl_icon = ctk.CTkLabel(row_frame, image=icon_img, text="")
-                lbl_icon.image = icon_img
-                lbl_icon.pack(side="left", padx=(0, 10))
+        for titulo, valor in metricas.items():
+            card = self.cards_component.get_card_by_title(titulo)
+            if card and hasattr(card, "value_label"):
+                card.value_label.configure(text=str(valor))
 
-            lbl_titulo = ctk.CTkLabel(row_frame, text=titulo, text_color="white",font=ctk.CTkFont(size=20, weight="bold"))
-            lbl_titulo.pack(side="left")
-            
-            if titulo == 'SOCIOS REGISTRADOS':
-                cant_socios = DashboardStats.obtener_total_socios()
-                lbl_cantidad = ctk.CTkLabel(card, text=str(cant_socios), text_color="white",font=ctk.CTkFont(size=48, weight="bold"))
-                lbl_cantidad.pack(pady=(10, 0))
-            elif titulo == 'LIBROS CARGADOS':
-                cant_libros = DashboardStats.obtener_total_libros()
-                lbl_cantidad = ctk.CTkLabel(card, text=str(cant_libros), text_color="white",font=ctk.CTkFont(size=48, weight="bold"))
-                lbl_cantidad.pack(pady=(10, 0))
-            elif titulo == 'PRÉSTAMOS REALIZADOS':
-                cant_prestamos = DashboardStats.obtener_prestamos_emitidos()
-                lbl_cantidad = ctk.CTkLabel(card, text=str(cant_prestamos), text_color="white",font=ctk.CTkFont(size=48, weight="bold"))
-                lbl_cantidad.pack(pady=(10, 0))
+        # Asignar eventos de click a pies
+        for card in self.cards_component.winfo_children():
+            pie_text = card.footer_label.cget("text").lower()
+            if "alta usuario" in pie_text:
+                card.footer_label.bind("<Button-1>", lambda e: self._open_new_user())
+            elif "editar usuario" in pie_text:
+                card.footer_label.bind("<Button-1>", lambda e: self._open_edit_user())
+            elif "cargar libro" in pie_text:
+                card.footer_label.bind("<Button-1>", lambda e: self._open_new_book())
+            elif "editar libro" in pie_text:
+                card.footer_label.bind("<Button-1>", lambda e: self._open_edit_book())
             else:
-                cant_prestamos_vencer = DashboardStats.obtener_prestamos_activos()
-                lbl_cantidad = ctk.CTkLabel(card, text=str(cant_prestamos_vencer), text_color="white",font=ctk.CTkFont(size=48, weight="bold"))
-                lbl_cantidad.pack(pady=(10, 0))
-            
-                        
-            # Footer común
-            footer_frame = ctk.CTkFrame(card, fg_color="transparent")
-            footer_frame.pack(side="bottom", fill="x", pady=(0, 10))
-    
-            separator = ctk.CTkFrame(footer_frame, fg_color="#D5D8DC", height=2, corner_radius=0)
-            separator.pack(fill="x", padx=20, pady=(0, 6))
-    
-            # Si hay múltiples opciones en el pie, mostrarlas como enlaces separados
-            if "|" in pie:
-                opciones = [x.strip() for x in pie.split("|")]
-    
-                links_frame = ctk.CTkFrame(footer_frame, fg_color="transparent")
-                links_frame.pack()
-    
-                for opcion in opciones:
-                    link = ctk.CTkLabel(links_frame,
-                        text=opcion,
-                        text_color="white",
-                        font=ctk.CTkFont(size=14, weight="bold"),
-                        cursor="hand2")
-                    link.pack(side="left", padx=10)
-    
-                    # Enlace individual con función fija
-                    texto = opcion.lower()
-                    if "alta" in texto:
-                        link.bind("<Button-1>", lambda e, opt=opcion: self._open_new_user())
-                    elif "editar" in texto:
-                        link.bind("<Button-1>", lambda e, opt=opcion: self._open_edit_user())
-            else:
-                # Pie normal (una sola opción)
-                lbl_pie = ctk.CTkLabel(footer_frame, text=pie, text_color="white",
-                                       font=ctk.CTkFont(size=14, weight="bold"),
-                                       cursor="hand2")
-                lbl_pie.pack()
-    
-                if "libro" in pie.lower():
-                    lbl_pie.bind("<Button-1>", lambda e: self._open_new_book())
-
+                card.footer_label.bind("<Button-1>", lambda e: self._close_loan())
 
     # ======================================================
     def _build_graph_section(self):
-        """Frame inferior para gráficos."""
+        """Frame inferior para futuros gráficos."""
         graph_frame = ctk.CTkFrame(self.layout.main_frame, fg_color="#ECF0F1", corner_radius=15)
         graph_frame.grid(row=2, column=0, sticky="nsew", padx=20, pady=(0, 20))
 
-        lbl = ctk.CTkLabel(graph_frame, text="Agregar graficos???",font=ctk.CTkFont(size=16, weight="bold"),text_color="#2C3E50")
+        lbl = ctk.CTkLabel(graph_frame, text="(Sección de gráficos próximamente)",
+                           font=ctk.CTkFont(size=16, weight="bold"),
+                           text_color="#2C3E50")
         lbl.pack(pady=20)
-    
+
+    # ======================================================
+    # Eventos de navegación
     def _open_new_user(self):
-        """Abre la vista de alta de usuario."""
+        self.after(100, lambda: self._launch_window("new_user", "NewUser"))
         self.destroy()
-        from new_user import NewUser
-        NewUser()
-    
+        from vista.new_user import NewUser
+        NewUser(session=self.session, admin=self.admin)
+
     def _open_edit_user(self):
-        """Abre la vista de edición de usuario."""
+        self.after(100, lambda: self._launch_window("edit_user", "EditUser"))
         self.destroy()
-        from edit_user import EditUser
-        EditUser()
-    
+        from vista.edit_user import EditUser
+        EditUser(session=self.session, admin=self.admin)
+
     def _open_new_book(self):
-        """Abre la vista de alta de libros."""
+        self.after(100, lambda: self._launch_window("new_book", "NewBook"))
         self.destroy()
-        from new_book import NewBook
-        NewBook()
+        from vista.new_book import NewBook
+        NewBook(session=self.session, admin=self.admin)
+
+    def _open_edit_book(self):
+        self.after(100, lambda: self._launch_window("edit_book", "EditBook"))
+        self.destroy()
+        from vista.edit_book import EditBook
+        EditBook(session=self.session, admin=self.admin)
+    
+    def _close_loan(self):
+        self.after(100, lambda: self._launch_window("loan_active_list", "LoanActiveList"))
+        self.destroy()
+        from vista.loan_active_list import LoanActiveList
+        LoanActiveList(session=self.session, admin=self.admin)
 
 
 if __name__ == "__main__":

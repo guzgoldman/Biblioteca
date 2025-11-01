@@ -1,39 +1,39 @@
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 import customtkinter as ctk
 from datetime import date
-from componentes import AppLayout, BaseApp, Table, get_default_callbacks
+from vista.componentes.base_app import BaseApp
+from vista.componentes.layout import AppLayout
+from vista.componentes.table import Table
+from vista.componentes.callbacks import get_default_callbacks
 from db.Conector import SessionLocal
 from modelo.Socio import Socio
 from modelo.Prestamo import Prestamo
 
+
 class UserList(BaseApp):
-    def __init__(self):
+    def __init__(self, session=None, admin=None):
         super().__init__(title="Biblioteca Pública - Socios")
 
         callbacks = get_default_callbacks(self)
 
-        # Estructura base
         self.layout = AppLayout(self, banner_image="vista/images/banner_bandera.jpg", callbacks=callbacks)
         self.layout.pack(fill="both", expand=True)
 
-        # Configurar filas y columnas principales
         self.layout.main_frame.grid_rowconfigure(1, weight=1)
         self.layout.main_frame.grid_columnconfigure(0, weight=1)
 
-        # Frame del contenido
         self.content_frame = ctk.CTkFrame(self.layout.main_frame, fg_color="transparent")
         self.content_frame.grid(row=1, column=0, sticky="n", pady=10)
 
-        # Título
         ctk.CTkLabel(
             self.content_frame,
             text="Listado de Socios",
             font=ctk.CTkFont(size=18, weight="bold")
         ).grid(row=0, column=0, sticky="w", pady=(0, 10))
 
-        # Definir columnas
         columns = [
             {"key": "dni", "text": "DNI", "width": 120},
             {"key": "nombre", "text": "Nombre", "width": 180},
@@ -42,11 +42,9 @@ class UserList(BaseApp):
             {"key": "estado", "text": "Estado Préstamo", "width": 150},
         ]
 
-        # Tabla reutilizable
         self.table = Table(self.content_frame, columns, width=900, height=420)
         self.table.grid(row=1, column=0, sticky="n")
 
-        # Cargar datos
         self.load_data()
 
     def load_data(self):
@@ -57,8 +55,9 @@ class UserList(BaseApp):
 
         activos_map = {}
         for p in prestamos_activos:
-            pactada = p.fecha_devolucion_pactada
-            pactada = pactada.date() if hasattr(pactada, "date") else pactada
+            pactada = getattr(p, "fecha_devolucion_pactada", None)
+            if pactada and hasattr(pactada, "date"):
+                pactada = pactada.date()
             estado = "Vencido" if (pactada and date.today() > pactada) else "Activo"
             activos_map[p.socio_id] = estado
 
@@ -69,13 +68,11 @@ class UserList(BaseApp):
                 "nombre": s.nombre,
                 "apellido": s.apellido,
                 "direccion": getattr(s, "direccion", ""),
-                "estado": activos_map.get(s.id, "Inactivo"),
+                "estado": activos_map.get(s.dni, "Inactivo"),
             })
         self.table.set_data(rows)
 
-def main():
-    app = UserList()
-    app.mainloop()
 
 if __name__ == "__main__":
-    main()
+    app = UserList()
+    app.mainloop()
