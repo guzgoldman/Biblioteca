@@ -1,6 +1,9 @@
 import customtkinter as ctk
 from tkinter import messagebox
-from vista.componentes.componentes import BaseApp, AppLayout, get_default_callbacks
+
+from vista.componentes.base_app import BaseApp
+from vista.componentes.layout import AppLayout
+from vista.componentes.callbacks import get_default_callbacks
 
 
 class NewBook(BaseApp):
