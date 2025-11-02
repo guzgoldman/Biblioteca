@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, Boolean, DateTime
 from sqlalchemy.orm import relationship, Session
 from sqlalchemy.exc import IntegrityError
 from db.Conector import Base
@@ -12,6 +12,11 @@ class Socio(Base):
     nombre = Column(String(100), nullable=False)
     apellido = Column(String(100), nullable=False)
     direccion = Column(String(255), nullable=False)
+    celular = Column(String(255), nullable=False)
+    email = Column(String(255), nullable=False)
+    activo = Column(Boolean, nullable=False)
+    fecha_alta = Column(DateTime(timezone=True), nullable=False)
+    fecha_baja = Column(DateTime(timezone=True), nullable=True)
 
     prestamos = relationship(
         "Prestamo",

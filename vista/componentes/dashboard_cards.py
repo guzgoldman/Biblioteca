@@ -72,7 +72,13 @@ class DashboardCards(ctk.CTkFrame):
                                    font=ctk.CTkFont(size=48, weight="bold"))
         value_label.pack(pady=(10, 0))
         card.value_label = value_label
-
+        
+        separator = ctk.CTkFrame(card, height=2, fg_color="white")
+        separator.pack(fill="x", padx=60, pady=(0, 8))  # más cerca del footer
+        card.separator = separator
+        
+        pie = info.get("pie", "")
+        pie_formatted = "   |   ".join(p.strip() for p in pie.split("|")) if "|" in pie else pie
         # Footer de texto (sin eventos, se maneja desde main_dashboard)
         footer = ctk.CTkLabel(card, text=pie, text_color="white",
                               font=ctk.CTkFont(size=14, weight="bold"))

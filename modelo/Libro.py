@@ -162,7 +162,7 @@ class Libro(Base):
     def buscar_por_isbn(cls, session: Session, isbn: str) -> "Libro":
         libro = session.query(cls).filter_by(isbn=isbn).one_or_none()
         if not libro:
-            raise ValueError(f"No existe un libro con ISBN '{isbn}'")
+            return False
         return libro
 
     @classmethod

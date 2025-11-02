@@ -1,6 +1,6 @@
 # modelo/Ejemplar.py
 from typing import List, Optional
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, func
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime, func
 from sqlalchemy.orm import relationship, Session
 from sqlalchemy.exc import IntegrityError
 from db.Conector import Base
@@ -19,6 +19,8 @@ class Ejemplar(Base):
         nullable=False,
         index=True,
     )
+    alta_ejemplar = Column(DateTime(timezone=True), nullable=False)
+    baja_ejemplar = Column(DateTime(timezone=True), nullable=True)
 
     # Si en Libro la PK no es isbn, asegurate de definir el back_populates con primaryjoin en ese modelo
     libro = relationship(

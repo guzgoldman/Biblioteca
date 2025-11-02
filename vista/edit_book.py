@@ -1,137 +1,218 @@
 import customtkinter as ctk
 from CTkMessagebox import CTkMessagebox
+from datetime import datetime
 from vista.componentes.base_app import BaseApp
 from vista.componentes.layout import AppLayout
 from vista.componentes.callbacks import get_default_callbacks
-from modelo.Socio import Socio  # Ajustá la importación según tu estructura real
+from modelo.Libro import Libro
+from modelo.Ejemplar import Ejemplar
+from modelo.Categoria import Categoria
+import re
 
 
 class EditBook(BaseApp):
     def __init__(self, session=None, admin=None):
-        super().__init__(title="Editar Libro - Biblioteca Pública")
+        super().__init__(title="Gestión de Libros - Biblioteca Pública")
+        self.session = session
+        self.admin = admin
 
         callbacks = get_default_callbacks(self)
-
-        # Layout base
-        self.layout = AppLayout(self, banner_image="vistas/assets/banner.jpg", callbacks=callbacks)
+        self.layout = AppLayout(self, banner_image="vista/images/banner_bandera.jpg", callbacks=callbacks)
         self.layout.pack(fill="both", expand=True)
 
-        # Contenido principal
-        self._build_search_form()
-
+        self._build_form()
         self.mainloop()
 
     # ======================================================
-    def _build_search_form(self):
-        """Primera vista: solo campo DNI + botón Buscar."""
-        self.form_frame = ctk.CTkFrame(self.layout.main_frame, fg_color="transparent")
-        self.form_frame.grid(row=1, column=0, sticky="nsew", padx=40, pady=30)
-        self.form_frame.grid_columnconfigure(0, weight=1)
-        self.form_frame.grid_columnconfigure(1, weight=2)
+    def _build_form(self):
+        """Construye el formulario de alta/edición de libro."""
+        frame = ctk.CTkFrame(self.layout.main_frame, fg_color="transparent")
+        frame.grid(row=1, column=0, sticky="nsew", padx=40, pady=30)
+        frame.grid_columnconfigure(0, weight=1)
+        frame.grid_columnconfigure(1, weight=2)
 
-        title = ctk.CTkLabel(self.form_frame, text="Buscar Socio por DNI",
+        title = ctk.CTkLabel(frame, text="Gestión de Libros", 
                              font=ctk.CTkFont(size=22, weight="bold"),
                              text_color="#2C3E50")
         title.grid(row=0, column=0, columnspan=2, pady=(0, 20))
 
-        lbl_dni = ctk.CTkLabel(self.form_frame, text="DNI:", font=ctk.CTkFont(size=14))
-        lbl_dni.grid(row=1, column=0, sticky="e", padx=5, pady=10)
-
-        self.entry_dni = ctk.CTkEntry(self.form_frame, width=200)
-        self.entry_dni.grid(row=1, column=1, sticky="w", padx=5, pady=10)
-
-        btn_buscar = ctk.CTkButton(self.form_frame, text="Buscar", width=120,
-                                   fg_color="#3498DB", hover_color="#21618C",
-                                   command=self._buscar_socio)
-        btn_buscar.grid(row=2, column=0, columnspan=2, pady=15)
-
-    # ======================================================
-    def _buscar_socio(self):
-        """Busca el socio por DNI y muestra los campos si existe."""
-        dni = self.entry_dni.get().strip()
-
-        if not dni:
-            CTkMessagebox(title="Error", message="Debe ingresar un DNI.", icon="cancel")
-            return
-
-        socio = Socio.obtener_por_dni(dni)  # Método que debería retornar un dict o None
-
-        if not socio:
-            CTkMessagebox(title="No encontrado", message="No existe un socio con ese DNI.", icon="info")
-            return
-
-        # Limpia el frame actual y muestra el formulario de edición
-        for widget in self.form_frame.winfo_children():
-            widget.destroy()
-
-        self._build_edit_form(socio)
-
-    # ======================================================
-    def _build_edit_form(self, socio):
-        """Construye el formulario con los datos del socio encontrado."""
-        title = ctk.CTkLabel(self.form_frame, text=f"Editar Socio (DNI: {socio['dni']})",
-                             font=ctk.CTkFont(size=22, weight="bold"),
-                             text_color="#2C3E50")
-        title.grid(row=0, column=0, columnspan=2, pady=(0, 20))
-
+        # Campos
         campos = [
-            ("Nombre:", socio["nombre"]),
-            ("Apellido:", socio["apellido"]),
-            ("Dirección:", socio["direccion"]),
-            ("Email:", socio["email"] or ""),
-            ("Celular:", socio["celular"] or "")
+            ("ISBN:", ""),
+            ("Título:", ""),
+            ("Autor:", ""),
+            ("Código ejemplares:", "")
         ]
-
         self.entries = {}
-
-        for i, (label, value) in enumerate(campos, start=1):
-            lbl = ctk.CTkLabel(self.form_frame, text=label, font=ctk.CTkFont(size=14))
-            lbl.grid(row=i, column=0, sticky="e", padx=5, pady=6)
-
-            entry = ctk.CTkEntry(self.form_frame, width=250)
-            entry.insert(0, value)
-            entry.grid(row=i, column=1, sticky="w", padx=5, pady=6)
+        for i, (label, default) in enumerate(campos, start=1):
+            ctk.CTkLabel(frame, text=label, font=ctk.CTkFont(size=14)).grid(row=i, column=0, sticky="e", pady=6, padx=5)
+            entry = ctk.CTkEntry(frame, width=250)
+            entry.insert(0, default)
+            entry.grid(row=i, column=1, sticky="w", pady=6, padx=5)
             self.entries[label] = entry
 
-        # Botones inferiores
-        btn_frame = ctk.CTkFrame(self.form_frame, fg_color="transparent")
-        btn_frame.grid(row=len(campos)+1, column=0, columnspan=2, pady=(20, 10))
+        # Categoría
+        ctk.CTkLabel(frame, text="Categoría:", font=ctk.CTkFont(size=14)).grid(row=5, column=0, sticky="e", pady=6, padx=5)
+        categorias = [c.nombre for c in self.session.query(Categoria).order_by(Categoria.nombre).all()]
+        self.categoria_cb = ctk.CTkComboBox(frame, values=categorias or ["Sin categorías"], width=250)
+        self.categoria_cb.grid(row=5, column=1, sticky="w", pady=6, padx=5)
 
-        btn_guardar = ctk.CTkButton(btn_frame, text="Guardar", fg_color="#2ECC71",
-                                    hover_color="#27AE60", width=120,
-                                    command=lambda: self._guardar_cambios(socio["dni"]))
-        btn_guardar.pack(side="left", padx=10)
+        # Cantidad de ejemplares
+        ctk.CTkLabel(frame, text="Cantidad de ejemplares:", font=ctk.CTkFont(size=14)).grid(row=6, column=0, sticky="e", pady=6, padx=5)
+        self.cantidad_cb = ctk.CTkComboBox(frame, values=[str(i) for i in range(1, 16)], width=100)
+        self.cantidad_cb.set("1")
+        self.cantidad_cb.grid(row=6, column=1, sticky="w", pady=6, padx=5)
 
-        btn_baja = ctk.CTkButton(btn_frame, text="Dar de baja", fg_color="#E67E22",
-                                 hover_color="#CA6F1E", width=120,
-                                 command=lambda: self._dar_de_baja(socio["dni"]))
-        btn_baja.pack(side="left", padx=10)
+        # Botones
+        btn_frame = ctk.CTkFrame(frame, fg_color="transparent")
+        btn_frame.grid(row=7, column=0, columnspan=2, pady=(20, 10))
 
-        btn_cancelar = ctk.CTkButton(btn_frame, text="Cancelar", fg_color="#E74C3C",
-                                     hover_color="#922B21", width=120,
-                                     command=self._go_dashboard)
-        btn_cancelar.pack(side="left", padx=10)
+        self.btn_guardar = ctk.CTkButton(btn_frame, text="Guardar", fg_color="#2ECC71",
+                                         hover_color="#27AE60", width=120, command=self._guardar_libro)
+        self.btn_guardar.pack(side="left", padx=10)
+
+        self.btn_editar_ejemplares = ctk.CTkButton(btn_frame, text="Editar ejemplares",
+                                                   fg_color="#2980B9", hover_color="#21618C",
+                                                   width=160, command=self._abrir_edit_copy,
+                                                   state="disabled")
+        self.btn_editar_ejemplares.pack(side="left", padx=10)
+
+        self.btn_limpiar = ctk.CTkButton(btn_frame, text="Limpiar", fg_color="#E67E22",
+                                         hover_color="#CA6F1E", width=120, command=self._limpiar_form)
+        self.btn_limpiar.pack(side="left", padx=10)
+
+        # Estado inicial
+        self._set_fields_state("disabled")
+        self.entries["ISBN:"].configure(state="normal")
+
+        # Evento ISBN
+        self.entries["ISBN:"].bind("<FocusOut>", lambda e: self._check_isbn())
+        self.entries["ISBN:"].bind("<Return>", lambda e: self._check_isbn())
 
     # ======================================================
-    def _guardar_cambios(self, dni):
-        """Guarda los cambios del socio."""
-        datos = {lbl: entry.get() for lbl, entry in self.entries.items()}
-        print(f"Actualizando socio {dni} con datos:", datos)
-        # Socio.actualizar(dni, datos)
-        CTkMessagebox(title="Éxito", message="Los datos fueron actualizados correctamente.", icon="check")
+    def _set_fields_state(self, state):
+        for label, entry in self.entries.items():
+            if label != "ISBN:":
+                entry.configure(state=state)
+        for widget in [self.categoria_cb, self.cantidad_cb, self.btn_guardar]:
+            widget.configure(state=state)
 
-    def _dar_de_baja(self, dni):
-        """Da de baja el socio."""
-        respuesta = CTkMessagebox(title="Confirmar baja",
-                                  message=f"¿Seguro que desea dar de baja al socio {dni}?",
-                                  icon="warning", option_1="Sí", option_2="No").get()
-        if respuesta == "Sí":
-            # Socio.eliminar(dni)
-            CTkMessagebox(title="Baja realizada", message="El socio ha sido eliminado.", icon="check")
-            self._go_dashboard()
+    # ======================================================
+    def _check_isbn(self):
+        isbn = self.entries["ISBN:"].get().strip()
+        if not isbn:
+            self._limpiar_form()
+            return
 
-    def _go_dashboard(self):
-        """Regresa al dashboard."""
+        # Validación simple de formato ISBN
+        if not re.match(r"^[0-9A-Za-z\-]{8,20}$", isbn):
+            CTkMessagebox(title="Error", message="El ISBN no tiene un formato válido.", icon="cancel")
+            return
+
+        self.entries["ISBN:"].configure(state="disabled")
+        libro = self.session.query(Libro).filter_by(isbn=isbn).first()
+        self._set_fields_state("normal")
+
+        if libro:
+            # Cargar datos
+            self.entries["Título:"].delete(0, "end")
+            self.entries["Autor:"].delete(0, "end")
+            self.entries["Código ejemplares:"].delete(0, "end")
+
+            self.entries["Título:"].insert(0, libro.titulo)
+            self.entries["Autor:"].insert(0, libro.autor)
+
+            # Obtener código base del primer ejemplar
+            primer = self.session.query(Ejemplar).filter_by(libro_isbn=isbn).first()
+            if primer:
+                base_code = primer.codigo.rsplit("-", 1)[0] if "-" in primer.codigo else primer.codigo
+                self.entries["Código ejemplares:"].insert(0, base_code)
+
+            # Seleccionar categoría
+            if libro.categorias:
+                self.categoria_cb.set(libro.categorias[0].nombre)
+
+            # Mostrar cantidad de ejemplares
+            cantidad = self.session.query(Ejemplar).filter_by(libro_isbn=isbn).count()
+            self.cantidad_cb.set(str(cantidad))
+
+            # Activar botón de edición
+            self.btn_editar_ejemplares.configure(state="normal")
+
+        else:
+            self._clear_fields(except_isbn=True)
+            self._set_fields_state("normal")
+            self.btn_editar_ejemplares.configure(state="disabled")
+
+    # ======================================================
+    def _abrir_edit_copy(self):
+        """Abre la vista edit_copy.py con el ISBN actual."""
+        isbn = self.entries["ISBN:"].get().strip()
+        if not isbn:
+            CTkMessagebox(title="Error", message="Debe tener un libro cargado para editar ejemplares.", icon="cancel")
+            return
+
         self.destroy()
-        from main_dashboard import MainDashboard
-        MainDashboard()
+        from vista.edit_copy import EditCopy
+        EditCopy(session=self.session, isbn=isbn, admin=self.admin)
+
+    # ======================================================
+    def _guardar_libro(self):
+        isbn = self.entries["ISBN:"].get().strip()
+        titulo = self.entries["Título:"].get().strip()
+        autor = self.entries["Autor:"].get().strip()
+        codigo = self.entries["Código ejemplares:"].get().strip()
+        categoria_nombre = self.categoria_cb.get()
+        cantidad = int(self.cantidad_cb.get())
+
+        # Validaciones
+        if not isbn or not titulo or not autor or not codigo:
+            CTkMessagebox(title="Error", message="Todos los campos son obligatorios.", icon="cancel")
+            return
+
+        libro = self.session.query(Libro).filter_by(isbn=isbn).first()
+        try:
+            if libro:
+                libro.editar(self.session, nuevo_titulo=titulo, nuevo_autor=autor,
+                             nuevos_ejemplares=0, codigo_identificador=codigo, commit=True)
+
+                # Actualizar código base en ejemplares existentes
+                ejemplares = self.session.query(Ejemplar).filter_by(libro_isbn=isbn).all()
+                for ej in ejemplares:
+                    if "-" in ej.codigo:
+                        suf = ej.codigo.split("-")[-1]
+                        ej.codigo = f"{codigo}-{suf}"
+                    else:
+                        ej.codigo = f"{codigo}"
+                self.session.commit()
+
+                CTkMessagebox(title="Actualizado", message="Libro actualizado correctamente.", icon="check")
+            else:
+                # Crear nuevo
+                Libro.crear_con_ejemplares(self.session, titulo=titulo, autor=autor, isbn=isbn,
+                                           codigo_identificador=codigo, cantidad_ejemplares=cantidad, commit=True)
+                CTkMessagebox(title="Éxito", message="Libro creado correctamente.", icon="check")
+        except Exception as e:
+            self.session.rollback()
+            CTkMessagebox(title="Error", message=f"No se pudo guardar el libro:\n{str(e)}", icon="cancel")
+
+        self._limpiar_form()
+
+    # ======================================================
+    def _clear_fields(self, except_isbn=False):
+        for label, entry in self.entries.items():
+            if except_isbn and label == "ISBN:":
+                continue
+            entry.delete(0, "end")
+
+    # ======================================================
+    def _limpiar_form(self):
+        for entry in self.entries.values():
+            entry.configure(state="normal")
+            entry.delete(0, "end")
+
+        self.categoria_cb.set("Sin categorías")
+        self.cantidad_cb.set("1")
+        self._set_fields_state("disabled")
+        self.entries["ISBN:"].configure(state="normal")
+        self.btn_editar_ejemplares.configure(state="disabled")

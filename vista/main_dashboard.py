@@ -40,8 +40,8 @@ class MainDashboard(BaseApp):
     def _build_cards_component(self):
         """Crea el componente de cards y luego las rellena."""
         cards_info = [
-            {"titulo": "SOCIOS REGISTRADOS", "pie": "Alta usuario | Editar usuario", "color": "#3498DB", "icon": "people.png"},
-            {"titulo": "LIBROS CARGADOS", "pie": "Cargar libro | Editar Libro", "color": "#2ECC71", "icon": "book.png"},
+            {"titulo": "SOCIOS REGISTRADOS", "pie": "Alta / Editar usuario", "color": "#3498DB", "icon": "people.png"},
+            {"titulo": "LIBROS CARGADOS", "pie": "Cargar / Editar Libro", "color": "#2ECC71", "icon": "book.png"},
             {"titulo": "PRÉSTAMOS REALIZADOS", "pie": "Nuevo préstamo", "color": "#1ABC9C", "icon": "librarian.png"},
             {"titulo": "PRÉSTAMOS A VENCER", "pie": "Cerrar préstamo", "color": "#E67E22", "icon": "calendar.png"},
         ]
@@ -70,13 +70,9 @@ class MainDashboard(BaseApp):
         # Asignar eventos de click a pies
         for card in self.cards_component.winfo_children():
             pie_text = card.footer_label.cget("text").lower()
-            if "alta usuario" in pie_text:
-                card.footer_label.bind("<Button-1>", lambda e: self._open_new_user())
-            elif "editar usuario" in pie_text:
+            if "usuario" in pie_text:
                 card.footer_label.bind("<Button-1>", lambda e: self._open_edit_user())
-            elif "cargar libro" in pie_text:
-                card.footer_label.bind("<Button-1>", lambda e: self._open_new_book())
-            elif "editar libro" in pie_text:
+            elif "libro" in pie_text:
                 card.footer_label.bind("<Button-1>", lambda e: self._open_edit_book())
             else:
                 card.footer_label.bind("<Button-1>", lambda e: self._close_loan())
@@ -94,23 +90,11 @@ class MainDashboard(BaseApp):
 
     # ======================================================
     # Eventos de navegación
-    def _open_new_user(self):
-        self.after(100, lambda: self._launch_window("new_user", "NewUser"))
-        self.destroy()
-        from vista.new_user import NewUser
-        NewUser(session=self.session, admin=self.admin)
-
     def _open_edit_user(self):
         self.after(100, lambda: self._launch_window("edit_user", "EditUser"))
         self.destroy()
         from vista.edit_user import EditUser
         EditUser(session=self.session, admin=self.admin)
-
-    def _open_new_book(self):
-        self.after(100, lambda: self._launch_window("new_book", "NewBook"))
-        self.destroy()
-        from vista.new_book import NewBook
-        NewBook(session=self.session, admin=self.admin)
 
     def _open_edit_book(self):
         self.after(100, lambda: self._launch_window("edit_book", "EditBook"))
