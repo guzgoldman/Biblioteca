@@ -1,17 +1,19 @@
+import re
+from datetime import datetime
 import customtkinter as ctk
-from CTkMessagebox import CTkMessagebox
+from db.session_manager import SessionManager
+
 from vista.componentes.base_app import BaseApp
 from vista.componentes.layout import AppLayout
 from vista.componentes.callbacks import get_default_callbacks
-from modelo.Socio import Socio
-from datetime import datetime
-import re
+from vista.componentes.utils import safe_messagebox
 
+from modelo.Socio import Socio
 
 class EditUser(BaseApp):
     def __init__(self, session=None, admin=None):
         super().__init__(title="Gestión de Socios - Biblioteca Pública")
-        self.session = session
+        self.session = session or SessionManager.get_session()
         self.admin = admin
 
         callbacks = get_default_callbacks(self)
@@ -137,7 +139,7 @@ class EditUser(BaseApp):
         # Validación visual de DNI
         self._validate_field("DNI:")
         if not dni.isdigit() or len(dni) != 8:
-            CTkMessagebox(title="Error", message="El DNI debe contener exactamente 8 dígitos numéricos.", icon="cancel")
+            safe_messagebox(title="Error", message="El DNI debe contener exactamente 8 dígitos numéricos.", level="error", buttons="ok", parent=self)
             return
 
         dni_entry.configure(state="disabled")
@@ -208,35 +210,35 @@ class EditUser(BaseApp):
 
         # DNI: solo números, longitud 8
         if not dni.isdigit() or len(dni) != 8:
-            CTkMessagebox(title="Error", message="El DNI debe contener exactamente 8 dígitos numéricos.", icon="cancel")
+            safe_messagebox(title="Error", message="El DNI debe contener exactamente 8 dígitos numéricos.", level="error", buttons="ok", parent=self)
             return
 
         # Nombre y apellido: letras y apóstrofo, longitud mínima 4
         patron_nombre = re.compile(r"^[A-Za-zÁÉÍÓÚáéíóúÑñ' ]{4,}$")
         if not patron_nombre.match(nombre):
-            CTkMessagebox(
+            safe_messagebox(
                 title="Error",
                 message="El nombre solo puede contener letras y debe tener al menos 4 caracteres.",
-                icon="cancel"
+                level="error", buttons="ok", parent=self
             )
             return
         if not patron_nombre.match(apellido):
-            CTkMessagebox(
+            safe_messagebox(
                 title="Error",
                 message="El apellido solo puede contener letras (se permite apóstrofo) y debe tener al menos 4 caracteres.",
-                icon="cancel"
+                level="error", buttons="ok", parent=self
             )
             return
 
         # Celular: obligatorio, solo números, longitud 10
         if not celular.isdigit() or len(celular) != 10:
-            CTkMessagebox(title="Error", message="El número de teléfono debe tener exactamente 10 dígitos numéricos.", icon="cancel")
+            safe_messagebox(title="Error", message="El número de teléfono debe tener exactamente 10 dígitos numéricos.", level="error", buttons="ok", parent=self)
             return
 
         # Email: estructura básica "parte1@parte2", parte2 debe contener un punto
         if email:
             if "@" not in email or "." not in email.split("@")[-1]:
-                CTkMessagebox(title="Error", message="El correo electrónico no tiene un formato válido.", icon="cancel")
+                safe_messagebox(title="Error", message="El correo electrónico no tiene un formato válido.", level="error", buttons="ok", parent=self)
                 return
 
         # ======================================================
@@ -251,10 +253,10 @@ class EditUser(BaseApp):
         }
         faltantes = [campo for campo, valor in campos_obligatorios.items() if not valor]
         if faltantes:
-            CTkMessagebox(
+            safe_messagebox(
                 title="Error",
                 message=f"Los siguientes campos son obligatorios:\n\n- " + "\n- ".join(faltantes),
-                icon="cancel"
+                level="error", buttons="ok", parent=self
             )
             return
 
@@ -280,15 +282,15 @@ class EditUser(BaseApp):
                     socio.fecha_baja = None
 
                 self.session.commit()
-                CTkMessagebox(title="Actualizado", message="Socio actualizado correctamente.", icon="check")
+                safe_messagebox(title="Actualizado", message="Socio actualizado correctamente.",  level="info", buttons="ok", parent=self)
 
             else:
                 # 🔸 NUEVO REGISTRO
                 if estado == "Inactivo":
-                    CTkMessagebox(
+                    safe_messagebox(
                         title="Advertencia",
                         message="No se puede crear un nuevo socio como inactivo.",
-                        icon="warning"
+                        level="warning", buttons="ok", parent=self
                     )
                     return
 
@@ -305,14 +307,14 @@ class EditUser(BaseApp):
 
                 self.session.add(nuevo_socio)
                 self.session.commit()
-                CTkMessagebox(title="Éxito", message="Socio registrado correctamente.", icon="check")
+                safe_messagebox(title="Éxito", message="Socio registrado correctamente.",  level="info", buttons="ok", parent=self)
 
         except Exception as e:
             self.session.rollback()
-            CTkMessagebox(
+            safe_messagebox(
                 title="Error",
                 message=f"Ocurrió un error al guardar el socio:\n\n{str(e)}",
-                icon="cancel"
+                level="error", buttons="ok", parent=self
             )
             return
 

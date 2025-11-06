@@ -1,23 +1,29 @@
+import re
 import customtkinter as ctk
-from CTkMessagebox import CTkMessagebox
-from datetime import datetime
+from db.session_manager import SessionManager
+
 from vista.componentes.base_app import BaseApp
 from vista.componentes.layout import AppLayout
 from vista.componentes.callbacks import get_default_callbacks
+from vista.componentes.utils import safe_messagebox   # ✅ Nuevo helper seguro
+
 from modelo.Libro import Libro
 from modelo.Ejemplar import Ejemplar
 from modelo.Categoria import Categoria
-import re
 
 
 class EditBook(BaseApp):
     def __init__(self, session=None, admin=None):
         super().__init__(title="Gestión de Libros - Biblioteca Pública")
-        self.session = session
+        self.session = session or SessionManager.get_session()
         self.admin = admin
 
         callbacks = get_default_callbacks(self)
-        self.layout = AppLayout(self, banner_image="vista/images/banner_bandera.jpg", callbacks=callbacks)
+        self.layout = AppLayout(
+            self,
+            banner_image="vista/images/banner_bandera.jpg",
+            callbacks=callbacks
+        )
         self.layout.pack(fill="both", expand=True)
 
         self._build_form()
@@ -31,9 +37,12 @@ class EditBook(BaseApp):
         frame.grid_columnconfigure(0, weight=1)
         frame.grid_columnconfigure(1, weight=2)
 
-        title = ctk.CTkLabel(frame, text="Gestión de Libros", 
-                             font=ctk.CTkFont(size=22, weight="bold"),
-                             text_color="#2C3E50")
+        title = ctk.CTkLabel(
+            frame,
+            text="Gestión de Libros",
+            font=ctk.CTkFont(size=22, weight="bold"),
+            text_color="#2C3E50"
+        )
         title.grid(row=0, column=0, columnspan=2, pady=(0, 20))
 
         # Campos
@@ -45,20 +54,26 @@ class EditBook(BaseApp):
         ]
         self.entries = {}
         for i, (label, default) in enumerate(campos, start=1):
-            ctk.CTkLabel(frame, text=label, font=ctk.CTkFont(size=14)).grid(row=i, column=0, sticky="e", pady=6, padx=5)
+            ctk.CTkLabel(frame, text=label, font=ctk.CTkFont(size=14)).grid(
+                row=i, column=0, sticky="e", pady=6, padx=5
+            )
             entry = ctk.CTkEntry(frame, width=250)
             entry.insert(0, default)
             entry.grid(row=i, column=1, sticky="w", pady=6, padx=5)
             self.entries[label] = entry
 
         # Categoría
-        ctk.CTkLabel(frame, text="Categoría:", font=ctk.CTkFont(size=14)).grid(row=5, column=0, sticky="e", pady=6, padx=5)
+        ctk.CTkLabel(frame, text="Categoría:", font=ctk.CTkFont(size=14)).grid(
+            row=5, column=0, sticky="e", pady=6, padx=5
+        )
         categorias = [c.nombre for c in self.session.query(Categoria).order_by(Categoria.nombre).all()]
         self.categoria_cb = ctk.CTkComboBox(frame, values=categorias or ["Sin categorías"], width=250)
         self.categoria_cb.grid(row=5, column=1, sticky="w", pady=6, padx=5)
 
         # Cantidad de ejemplares
-        ctk.CTkLabel(frame, text="Cantidad de ejemplares:", font=ctk.CTkFont(size=14)).grid(row=6, column=0, sticky="e", pady=6, padx=5)
+        ctk.CTkLabel(frame, text="Cantidad de ejemplares:", font=ctk.CTkFont(size=14)).grid(
+            row=6, column=0, sticky="e", pady=6, padx=5
+        )
         self.cantidad_cb = ctk.CTkComboBox(frame, values=[str(i) for i in range(1, 16)], width=100)
         self.cantidad_cb.set("1")
         self.cantidad_cb.grid(row=6, column=1, sticky="w", pady=6, padx=5)
@@ -67,18 +82,35 @@ class EditBook(BaseApp):
         btn_frame = ctk.CTkFrame(frame, fg_color="transparent")
         btn_frame.grid(row=7, column=0, columnspan=2, pady=(20, 10))
 
-        self.btn_guardar = ctk.CTkButton(btn_frame, text="Guardar", fg_color="#2ECC71",
-                                         hover_color="#27AE60", width=120, command=self._guardar_libro)
+        self.btn_guardar = ctk.CTkButton(
+            btn_frame,
+            text="Guardar",
+            fg_color="#2ECC71",
+            hover_color="#27AE60",
+            width=120,
+            command=self._guardar_libro
+        )
         self.btn_guardar.pack(side="left", padx=10)
 
-        self.btn_editar_ejemplares = ctk.CTkButton(btn_frame, text="Editar ejemplares",
-                                                   fg_color="#2980B9", hover_color="#21618C",
-                                                   width=160, command=self._abrir_edit_copy,
-                                                   state="disabled")
+        self.btn_editar_ejemplares = ctk.CTkButton(
+            btn_frame,
+            text="Editar ejemplares",
+            fg_color="#2980B9",
+            hover_color="#21618C",
+            width=160,
+            command=self._abrir_edit_copy,
+            state="disabled"
+        )
         self.btn_editar_ejemplares.pack(side="left", padx=10)
 
-        self.btn_limpiar = ctk.CTkButton(btn_frame, text="Limpiar", fg_color="#E67E22",
-                                         hover_color="#CA6F1E", width=120, command=self._limpiar_form)
+        self.btn_limpiar = ctk.CTkButton(
+            btn_frame,
+            text="Limpiar",
+            fg_color="#E67E22",
+            hover_color="#CA6F1E",
+            width=120,
+            command=self._limpiar_form
+        )
         self.btn_limpiar.pack(side="left", padx=10)
 
         # Estado inicial
@@ -104,9 +136,8 @@ class EditBook(BaseApp):
             self._limpiar_form()
             return
 
-        # Validación simple de formato ISBN
         if not re.match(r"^[0-9A-Za-z\-]{8,20}$", isbn):
-            CTkMessagebox(title="Error", message="El ISBN no tiene un formato válido.", icon="cancel")
+            safe_messagebox(title="Error", message="El ISBN no tiene un formato válido.", level="error", buttons="ok", parent=self)
             return
 
         self.entries["ISBN:"].configure(state="disabled")
@@ -115,28 +146,22 @@ class EditBook(BaseApp):
 
         if libro:
             # Cargar datos
-            self.entries["Título:"].delete(0, "end")
-            self.entries["Autor:"].delete(0, "end")
-            self.entries["Código ejemplares:"].delete(0, "end")
+            for campo in ["Título:", "Autor:", "Código ejemplares:"]:
+                self.entries[campo].delete(0, "end")
 
             self.entries["Título:"].insert(0, libro.titulo)
             self.entries["Autor:"].insert(0, libro.autor)
 
-            # Obtener código base del primer ejemplar
             primer = self.session.query(Ejemplar).filter_by(libro_isbn=isbn).first()
             if primer:
                 base_code = primer.codigo.rsplit("-", 1)[0] if "-" in primer.codigo else primer.codigo
                 self.entries["Código ejemplares:"].insert(0, base_code)
 
-            # Seleccionar categoría
             if libro.categorias:
                 self.categoria_cb.set(libro.categorias[0].nombre)
 
-            # Mostrar cantidad de ejemplares
             cantidad = self.session.query(Ejemplar).filter_by(libro_isbn=isbn).count()
             self.cantidad_cb.set(str(cantidad))
-
-            # Activar botón de edición
             self.btn_editar_ejemplares.configure(state="normal")
 
         else:
@@ -146,10 +171,9 @@ class EditBook(BaseApp):
 
     # ======================================================
     def _abrir_edit_copy(self):
-        """Abre la vista edit_copy.py con el ISBN actual."""
         isbn = self.entries["ISBN:"].get().strip()
         if not isbn:
-            CTkMessagebox(title="Error", message="Debe tener un libro cargado para editar ejemplares.", icon="cancel")
+            safe_messagebox(title="Error", message="Debe tener un libro cargado para editar ejemplares.", level="error", buttons="ok", parent=self)
             return
 
         self.destroy()
@@ -165,18 +189,21 @@ class EditBook(BaseApp):
         categoria_nombre = self.categoria_cb.get()
         cantidad = int(self.cantidad_cb.get())
 
-        # Validaciones
         if not isbn or not titulo or not autor or not codigo:
-            CTkMessagebox(title="Error", message="Todos los campos son obligatorios.", icon="cancel")
+            safe_messagebox(title="Error", message="Todos los campos son obligatorios.", level="error", buttons="ok", parent=self)
             return
 
         libro = self.session.query(Libro).filter_by(isbn=isbn).first()
         try:
             if libro:
-                libro.editar(self.session, nuevo_titulo=titulo, nuevo_autor=autor,
-                             nuevos_ejemplares=0, codigo_identificador=codigo, commit=True)
-
-                # Actualizar código base en ejemplares existentes
+                libro.editar(
+                    self.session,
+                    nuevo_titulo=titulo,
+                    nuevo_autor=autor,
+                    nuevos_ejemplares=0,
+                    codigo_identificador=codigo,
+                    commit=True
+                )
                 ejemplares = self.session.query(Ejemplar).filter_by(libro_isbn=isbn).all()
                 for ej in ejemplares:
                     if "-" in ej.codigo:
@@ -185,16 +212,21 @@ class EditBook(BaseApp):
                     else:
                         ej.codigo = f"{codigo}"
                 self.session.commit()
-
-                CTkMessagebox(title="Actualizado", message="Libro actualizado correctamente.", icon="check")
+                safe_messagebox(title="Actualizado", message="Libro actualizado correctamente.", level="info", buttons="ok", parent=self)
             else:
-                # Crear nuevo
-                Libro.crear_con_ejemplares(self.session, titulo=titulo, autor=autor, isbn=isbn,
-                                           codigo_identificador=codigo, cantidad_ejemplares=cantidad, commit=True)
-                CTkMessagebox(title="Éxito", message="Libro creado correctamente.", icon="check")
+                Libro.crear_con_ejemplares(
+                    self.session,
+                    titulo=titulo,
+                    autor=autor,
+                    isbn=isbn,
+                    codigo_identificador=codigo,
+                    cantidad_ejemplares=cantidad,
+                    commit=True
+                )
+                safe_messagebox(title="Éxito", message="Libro creado correctamente.", level="info", buttons="ok", parent=self)
         except Exception as e:
             self.session.rollback()
-            CTkMessagebox(title="Error", message=f"No se pudo guardar el libro:\n{str(e)}", icon="cancel")
+            safe_messagebox(title="Error", message=f"No se pudo guardar el libro:\n{str(e)}", level="error", buttons="ok", parent=self)
 
         self._limpiar_form()
 
@@ -210,7 +242,6 @@ class EditBook(BaseApp):
         for entry in self.entries.values():
             entry.configure(state="normal")
             entry.delete(0, "end")
-
         self.categoria_cb.set("Sin categorías")
         self.cantidad_cb.set("1")
         self._set_fields_state("disabled")

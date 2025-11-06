@@ -1,5 +1,6 @@
-import customtkinter as ctk
 import os
+import customtkinter as ctk
+from db.session_manager import SessionManager
 
 # Import modular de componentes
 from vista.componentes.base_app import BaseApp
@@ -15,7 +16,7 @@ class MainDashboard(BaseApp):
     def __init__(self, session=None, admin=None):
         super().__init__(title="Biblioteca Pública - Dashboard")
 
-        self.session = session
+        self.session = session or SessionManager.get_session()
         self.admin = admin
 
         callbacks = get_default_callbacks(self)
@@ -74,6 +75,8 @@ class MainDashboard(BaseApp):
                 card.footer_label.bind("<Button-1>", lambda e: self._open_edit_user())
             elif "libro" in pie_text:
                 card.footer_label.bind("<Button-1>", lambda e: self._open_edit_book())
+            elif "nuevo préstamo" in pie_text:
+                card.footer_label.bind("<Button-1>", lambda e: self._open_create_loan())
             else:
                 card.footer_label.bind("<Button-1>", lambda e: self._close_loan())
 
@@ -101,13 +104,18 @@ class MainDashboard(BaseApp):
         self.destroy()
         from vista.edit_book import EditBook
         EditBook(session=self.session, admin=self.admin)
+        
+    def _open_create_loan(self):
+        self.after(100, lambda: self._launch_window("new_loan", "NewLoan"))
+        self.destroy()
+        from vista.new_loan import NewLoan
+        NewLoan(session=self.session, admin=self.admin)
     
     def _close_loan(self):
         self.after(100, lambda: self._launch_window("loan_active_list", "LoanActiveList"))
         self.destroy()
         from vista.loan_active_list import LoanActiveList
         LoanActiveList(session=self.session, admin=self.admin)
-
 
 if __name__ == "__main__":
     app = MainDashboard()

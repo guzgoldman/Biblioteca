@@ -7,17 +7,17 @@ from vista.componentes.base_app import BaseApp
 from vista.componentes.layout import AppLayout
 from vista.componentes.callbacks import get_default_callbacks
 from vista.componentes.table import Table  # tu Table modular
+from vista.componentes.utils import safe_messagebox
 
-from db.Conector import SessionLocal
+from db.session_manager import SessionManager
 from modelo.Prestamo import Prestamo
 from modelo.Ejemplar import Ejemplar
-from CTkMessagebox import CTkMessagebox
 
 
 class LoanActiveList(BaseApp):
     def __init__(self, session=None, admin=None):
         super().__init__(title="Biblioteca Pública - Préstamos Activos")
-        self.session = session or SessionLocal()
+        self.session = session or SessionManager.get_session()
         self.admin = admin
 
         callbacks = get_default_callbacks(self)
@@ -131,13 +131,13 @@ class LoanActiveList(BaseApp):
             return
 
         dni = p.socio.dni if p.socio else "?"
-        resp = CTkMessagebox(
+        resp = safe_messagebox(
             title="Confirmación",
             message=f"Se cerrará el préstamo con id {prestamo_id} del socio {dni}.\n\n¿Confirmar?",
-            icon="warning",
-            option_1="Cancelar",
-            option_2="Aceptar",
-        ).get()
+            level="warning",
+            buttons="okcancel",
+            parent=self
+        )
 
         if resp != "Aceptar":
             return
@@ -152,7 +152,7 @@ class LoanActiveList(BaseApp):
             session.commit()
         except Exception:
             session.rollback()
-            CTkMessagebox(title="Error", message="No se pudo cerrar el préstamo.", icon="cancel")
+            safe_messagebox(title="Error", message="No se pudo cerrar el préstamo.", level="error", buttons="ok", parent=self)
             return
 
         # Quitar fila de la vista (ya no está activo)

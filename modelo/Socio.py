@@ -36,8 +36,8 @@ class Socio(Base):
         dni = (dni or "").strip()
         if not dni:
             return None
-
-        session.expire_all()  # 🔥 fuerza a recargar desde la base real
+        print(session)
+        #session.expire_all()  # 🔥 fuerza a recargar desde la base real
         socio = session.query(cls).filter_by(dni=dni).one_or_none()
         print(f"[DEBUG] Buscando socio con DNI: {dni} -> {socio}")
         return socio

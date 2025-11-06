@@ -1,16 +1,19 @@
 import customtkinter as ctk
-from CTkMessagebox import CTkMessagebox
 from datetime import datetime
+
 from vista.componentes.base_app import BaseApp
 from vista.componentes.layout import AppLayout
 from vista.componentes.callbacks import get_default_callbacks
+from vista.componentes.utils import safe_messagebox
+
 from modelo.Ejemplar import Ejemplar
+from db.session_manager import SessionManager
 
 
 class EditCopy(BaseApp):
     def __init__(self, session=None, isbn=None, admin=None):
         super().__init__(title="Editar Ejemplar - Biblioteca Pública")
-        self.session = session
+        self.session = session or SessionManager.get_session()
         self.admin = admin
         self.isbn = (isbn or "").upper()  # 🔹 Forzar a mayúsculas
 
@@ -86,7 +89,7 @@ class EditCopy(BaseApp):
     def _load_ejemplares(self):
         """Carga los ejemplares del libro actual en el ComboBox."""
         if not self.isbn:
-            CTkMessagebox(title="Error", message="No se recibió ISBN para cargar ejemplares.", icon="cancel")
+            safe_messagebox(title="Error", message="No se recibió ISBN para cargar ejemplares.", level="error", buttons="ok", parent=self)
             return
 
         ejemplares = (
@@ -97,7 +100,7 @@ class EditCopy(BaseApp):
         )
 
         if not ejemplares:
-            CTkMessagebox(title="Aviso", message="No hay ejemplares asociados a este libro.", icon="info")
+            safe_messagebox(title="Aviso", message="No hay ejemplares asociados a este libro.", level="warning", buttons="ok", parent=self)
             return
 
         self.ejemplares = ejemplares
@@ -153,7 +156,7 @@ class EditCopy(BaseApp):
     def _agregar_ejemplar(self):
         """Crea un nuevo ejemplar para el libro actual."""
         if not self.isbn:
-            CTkMessagebox(title="Error", message="No hay un ISBN válido para crear ejemplar.", icon="cancel")
+            safe_messagebox(title="Error", message="No hay un ISBN válido para crear ejemplar.", level="error", buttons="ok", parent=self)
             return
 
         isbn_mayus = self.isbn.upper()  # 🔹 Forzar ISBN en mayúsculas
@@ -165,7 +168,7 @@ class EditCopy(BaseApp):
             .first()
         )
         if not ultimo:
-            CTkMessagebox(title="Error", message="No hay ejemplares base para generar el código.", icon="cancel")
+            safe_messagebox(title="Error", message="No hay ejemplares base para generar el código.", level="error", buttons="ok", parent=self)
             return
 
         nuevo_numero = ultimo.numero_ejemplar + 1
@@ -184,19 +187,19 @@ class EditCopy(BaseApp):
         try:
             self.session.add(nuevo)
             self.session.commit()
-            CTkMessagebox(title="Éxito", message=f"Ejemplar {nuevo_codigo} agregado correctamente.", icon="check")
+            safe_messagebox(title="Éxito", message=f"Ejemplar {nuevo_codigo} agregado correctamente.",  level="info", buttons="ok", parent=self)
             self._load_ejemplares()
             self.ejemplar_cb.set(nuevo_codigo)
             self._load_data(nuevo)
         except Exception as e:
             self.session.rollback()
-            CTkMessagebox(title="Error", message=f"No se pudo crear el ejemplar:\n{str(e)}", icon="cancel")
+            safe_messagebox(title="Error", message=f"No se pudo crear el ejemplar:\n{str(e)}", level="error", buttons="ok", parent=self)
 
     # ======================================================
     def _guardar_cambios(self):
         """Guarda cambios del ejemplar actual."""
         if not hasattr(self, "ejemplar_actual"):
-            CTkMessagebox(title="Error", message="No hay ejemplar cargado.", icon="cancel")
+            safe_messagebox(title="Error", message="No hay ejemplar cargado.", level="error", buttons="ok", parent=self)
             return
 
         ejemplar = self.ejemplar_actual
@@ -205,7 +208,7 @@ class EditCopy(BaseApp):
         if ejemplar.alta_ejemplar:
             alta_date = ejemplar.alta_ejemplar.date() if isinstance(ejemplar.alta_ejemplar, datetime) else ejemplar.alta_ejemplar
             if (datetime.today().date() - alta_date).days <= 0 and self.estado_var.get() == "Inactivo":
-                CTkMessagebox(title="Error", message="No se puede dar de baja un ejemplar recién creado.", icon="cancel")
+                safe_messagebox(title="Error", message="No se puede dar de baja un ejemplar recién creado.", level="error", buttons="ok", parent=self)
                 return
 
 
@@ -216,15 +219,15 @@ class EditCopy(BaseApp):
                 ejemplar.baja_ejemplar = None
 
             self.session.commit()
-            CTkMessagebox(title="Éxito", message="Ejemplar actualizado correctamente.", icon="check")
+            safe_messagebox(title="Éxito", message="Ejemplar actualizado correctamente.",  level="info", buttons="ok", parent=self)
             self._load_ejemplares()
         except Exception as e:
             self.session.rollback()
-            CTkMessagebox(title="Error", message=f"No se pudo actualizar el ejemplar:\n{str(e)}", icon="cancel")
+            safe_messagebox(title="Error", message=f"No se pudo actualizar el ejemplar:\n{str(e)}", level="error", buttons="ok", parent=self)
 
     # ======================================================
     def _volver(self):
         """Vuelve a la vista anterior."""
         self.destroy()
-        from vista.edit_book import NewBook
-        NewBook(session=self.session, admin=self.admin)
+        from vista.edit_book import EditBook
+        EditBook(session=self.session, admin=self.admin)
