@@ -10,6 +10,7 @@ from vista.componentes.utils import safe_messagebox
 
 from modelo.Socio import Socio
 
+
 class EditUser(BaseApp):
     def __init__(self, session=None, admin=None):
         super().__init__(title="Gestión de Socios - Biblioteca Pública")
@@ -32,9 +33,12 @@ class EditUser(BaseApp):
         form_frame.grid_columnconfigure(0, weight=1)
         form_frame.grid_columnconfigure(1, weight=2)
 
-        title = ctk.CTkLabel(form_frame, text="Gestión de Socio", 
-                             font=ctk.CTkFont(size=22, weight="bold"),
-                             text_color="#2C3E50")
+        # Título
+        title = ctk.CTkLabel(
+            form_frame, text="Gestión de Socio",
+            font=ctk.CTkFont(size=22, weight="bold"),
+            text_color="#2C3E50"
+        )
         title.grid(row=0, column=0, columnspan=2, pady=(0, 20))
 
         # Campos principales
@@ -59,21 +63,22 @@ class EditUser(BaseApp):
         # Estado
         estado_label = ctk.CTkLabel(form_frame, text="Estado:", font=ctk.CTkFont(size=14), text_color="#2C3E50")
         estado_label.grid(row=6, column=0, sticky="e", pady=6, padx=5)
+
         self.estado_var = ctk.StringVar(value="Activo")
         self.rb_activo = ctk.CTkRadioButton(form_frame, text="Activo", variable=self.estado_var, value="Activo")
         self.rb_inactivo = ctk.CTkRadioButton(form_frame, text="Inactivo", variable=self.estado_var, value="Inactivo")
         self.rb_activo.grid(row=6, column=1, sticky="w", padx=(0, 80), pady=4)
         self.rb_inactivo.grid(row=6, column=1, sticky="w", padx=(100, 0), pady=4)
 
-        # Fechas
+        # Fechas (siempre deshabilitadas)
         fecha_alta_label = ctk.CTkLabel(form_frame, text="Fecha de alta:", font=ctk.CTkFont(size=14), text_color="#2C3E50")
         fecha_alta_label.grid(row=7, column=0, sticky="e", pady=6, padx=5)
-        self.entry_fecha_alta = ctk.CTkEntry(form_frame, width=150)
+        self.entry_fecha_alta = ctk.CTkEntry(form_frame, width=150, state="disabled")
         self.entry_fecha_alta.grid(row=7, column=1, sticky="w", pady=6, padx=5)
 
         fecha_baja_label = ctk.CTkLabel(form_frame, text="Fecha de baja:", font=ctk.CTkFont(size=14), text_color="#2C3E50")
         fecha_baja_label.grid(row=8, column=0, sticky="e", pady=6, padx=5)
-        self.entry_fecha_baja = ctk.CTkEntry(form_frame, width=150)
+        self.entry_fecha_baja = ctk.CTkEntry(form_frame, width=150, state="disabled")
         self.entry_fecha_baja.grid(row=8, column=1, sticky="w", pady=6, padx=5)
 
         # Botones
@@ -100,7 +105,6 @@ class EditUser(BaseApp):
 
     # ======================================================
     def _validate_field(self, key):
-        """Valida visualmente un campo individual."""
         entry = self.entries[key]
         value = entry.get().strip()
         valid = True
@@ -114,21 +118,26 @@ class EditUser(BaseApp):
         elif key == "Correo electrónico:":
             valid = "@" in value and "." in value.split("@")[-1]
 
-        # Colorear borde del campo
         entry.configure(border_color="#27AE60" if valid else "#E74C3C")
 
     # ======================================================
     def _set_fields_state(self, state):
+        """Habilita/deshabilita campos pero nunca toca las fechas"""
         for label, entry in self.entries.items():
             if label != "DNI:":
                 entry.configure(state=state)
-        for widget in [self.rb_activo, self.rb_inactivo, self.entry_fecha_alta, self.entry_fecha_baja]:
+
+        for widget in [self.rb_activo, self.rb_inactivo]:
             widget.configure(state=state)
+
+        # FECHAS: siempre deshabilitadas
+        self.entry_fecha_alta.configure(state="disabled")
+        self.entry_fecha_baja.configure(state="disabled")
+
         self.btn_guardar.configure(state=state)
 
     # ======================================================
     def _check_dni(self):
-        """Valida o busca el socio según el DNI ingresado."""
         dni_entry = self.entries["DNI:"]
         dni = dni_entry.get().strip()
 
@@ -136,10 +145,10 @@ class EditUser(BaseApp):
             self._limpiar_form()
             return
 
-        # Validación visual de DNI
         self._validate_field("DNI:")
+
         if not dni.isdigit() or len(dni) != 8:
-            safe_messagebox(title="Error", message="El DNI debe contener exactamente 8 dígitos numéricos.", level="error", buttons="ok", parent=self)
+            safe_messagebox(title="Error", message="El DNI debe contener exactamente 8 dígitos.", level="error", parent=self)
             return
 
         dni_entry.configure(state="disabled")
@@ -158,31 +167,56 @@ class EditUser(BaseApp):
             self.entries["Teléfono:"].insert(0, socio.celular or "")
 
             self.estado_var.set("Activo" if socio.activo else "Inactivo")
+
+            self.entry_fecha_alta.configure(state="normal")
             self.entry_fecha_alta.delete(0, "end")
-            self.entry_fecha_alta.insert(0, socio.fecha_alta.strftime("%d/%m/%Y") if socio.fecha_alta else "")
+            self.entry_fecha_alta.insert(0, socio.fecha_alta.strftime("%d/%m/%Y"))
+            self.entry_fecha_alta.configure(state="disabled")
+
+            self.entry_fecha_baja.configure(state="normal")
             self.entry_fecha_baja.delete(0, "end")
             self.entry_fecha_baja.insert(0, socio.fecha_baja.strftime("%d/%m/%Y") if socio.fecha_baja else "")
+            self.entry_fecha_baja.configure(state="disabled")
+
         else:
             self._clear_fields(except_dni=True)
             self._set_fields_state("normal")
             self.estado_var.set("Activo")
+
+            self.entry_fecha_alta.configure(state="normal")
             self.entry_fecha_alta.delete(0, "end")
             self.entry_fecha_alta.insert(0, datetime.today().strftime("%d/%m/%Y"))
+            self.entry_fecha_alta.configure(state="disabled")
+
+            self.entry_fecha_baja.configure(state="normal")
             self.entry_fecha_baja.delete(0, "end")
+            self.entry_fecha_baja.configure(state="disabled")
 
     # ======================================================
     def _limpiar_form(self):
-        """Limpia todo el formulario y reactiva el campo DNI."""
+        """Limpia todo el formulario dejando las fechas VACÍAS y deshabilitadas."""
+
+        # Limpiar todos los campos editables
         for label, entry in self.entries.items():
             entry.configure(state="normal", border_color="#D0D3D4")
             entry.delete(0, "end")
 
+        # Estado vuelve a Activo
         self.estado_var.set("Activo")
-        self.entry_fecha_alta.delete(0, "end")
-        self.entry_fecha_alta.insert(0, datetime.today().strftime("%d/%m/%Y"))
-        self.entry_fecha_baja.delete(0, "end")
 
+        # FECHAS → dejar VACÍAS (SIN FECHA), y deshabilitadas
+        self.entry_fecha_alta.configure(state="normal")
+        self.entry_fecha_alta.delete(0, "end")
+        self.entry_fecha_alta.configure(state="disabled")
+
+        self.entry_fecha_baja.configure(state="normal")
+        self.entry_fecha_baja.delete(0, "end")
+        self.entry_fecha_baja.configure(state="disabled")
+
+        # Deshabilitar todos los campos excepto DNI
         self._set_fields_state("disabled")
+
+        # DNI queda habilitado para ingresar otro
         self.entries["DNI:"].configure(state="normal", border_color="#D0D3D4")
 
     # ======================================================
@@ -191,12 +225,15 @@ class EditUser(BaseApp):
             if except_dni and label == "DNI:":
                 continue
             entry.delete(0, "end")
+
         self.estado_var.set("Activo")
+
+        self.entry_fecha_baja.configure(state="normal")
         self.entry_fecha_baja.delete(0, "end")
+        self.entry_fecha_baja.configure(state="disabled")
 
     # ======================================================
     def _guardar_usuario(self):
-        """Guarda o actualiza un socio existente según el DNI ingresado."""
         dni = self.entries["DNI:"].get().strip()
         nombre = self.entries["Nombre:"].get().strip()
         apellido = self.entries["Apellido:"].get().strip()
@@ -204,71 +241,44 @@ class EditUser(BaseApp):
         celular = self.entries["Teléfono:"].get().strip()
         estado = self.estado_var.get()
 
-        # ======================================================
-        # 🔹 VALIDACIONES DE FORMATO
-        # ======================================================
-
-        # DNI: solo números, longitud 8
+        # Validaciones
         if not dni.isdigit() or len(dni) != 8:
-            safe_messagebox(title="Error", message="El DNI debe contener exactamente 8 dígitos numéricos.", level="error", buttons="ok", parent=self)
+            safe_messagebox(title="Error", message="El DNI debe tener 8 dígitos.", level="error", parent=self)
             return
 
-        # Nombre y apellido: letras y apóstrofo, longitud mínima 4
         patron_nombre = re.compile(r"^[A-Za-zÁÉÍÓÚáéíóúÑñ' ]{4,}$")
-        if not patron_nombre.match(nombre):
-            safe_messagebox(
-                title="Error",
-                message="El nombre solo puede contener letras y debe tener al menos 4 caracteres.",
-                level="error", buttons="ok", parent=self
-            )
-            return
-        if not patron_nombre.match(apellido):
-            safe_messagebox(
-                title="Error",
-                message="El apellido solo puede contener letras (se permite apóstrofo) y debe tener al menos 4 caracteres.",
-                level="error", buttons="ok", parent=self
-            )
+        if not patron_nombre.match(nombre) or not patron_nombre.match(apellido):
+            safe_messagebox(title="Error", message="Nombre y apellido deben contener solo letras y mínimo 4 caracteres.",
+                            level="error", parent=self)
             return
 
-        # Celular: obligatorio, solo números, longitud 10
         if not celular.isdigit() or len(celular) != 10:
-            safe_messagebox(title="Error", message="El número de teléfono debe tener exactamente 10 dígitos numéricos.", level="error", buttons="ok", parent=self)
+            safe_messagebox(title="Error", message="El teléfono debe tener 10 dígitos.", level="error", parent=self)
             return
 
-        # Email: estructura básica "parte1@parte2", parte2 debe contener un punto
         if email:
             if "@" not in email or "." not in email.split("@")[-1]:
-                safe_messagebox(title="Error", message="El correo electrónico no tiene un formato válido.", level="error", buttons="ok", parent=self)
+                safe_messagebox(title="Error", message="Email inválido.", level="error", parent=self)
                 return
 
-        # ======================================================
-        # 🔹 VALIDACIONES DE CAMPOS OBLIGATORIOS
-        # ======================================================
-        campos_obligatorios = {
+        faltantes = {
             "DNI": dni,
             "Nombre": nombre,
             "Apellido": apellido,
             "Teléfono": celular,
             "Correo electrónico": email
         }
-        faltantes = [campo for campo, valor in campos_obligatorios.items() if not valor]
-        if faltantes:
-            safe_messagebox(
-                title="Error",
-                message=f"Los siguientes campos son obligatorios:\n\n- " + "\n- ".join(faltantes),
-                level="error", buttons="ok", parent=self
-            )
+        missing = [k for k, v in faltantes.items() if not v]
+        if missing:
+            safe_messagebox(title="Error", message="Campos obligatorios faltantes:\n" + "\n".join(missing),
+                            level="error", parent=self)
             return
 
-        # ======================================================
-        # 🔹 OPERACIÓN DE GUARDADO / ACTUALIZACIÓN
-        # ======================================================
         socio = self.session.query(Socio).filter_by(dni=dni).first()
         hoy = datetime.today().date()
 
         try:
             if socio:
-                # 🔸 EDICIÓN
                 socio.nombre = nombre
                 socio.apellido = apellido
                 socio.email = email
@@ -282,16 +292,12 @@ class EditUser(BaseApp):
                     socio.fecha_baja = None
 
                 self.session.commit()
-                safe_messagebox(title="Actualizado", message="Socio actualizado correctamente.",  level="info", buttons="ok", parent=self)
+                safe_messagebox(title="Actualizado", message="Socio actualizado correctamente.", level="info", parent=self)
 
             else:
-                # 🔸 NUEVO REGISTRO
                 if estado == "Inactivo":
-                    safe_messagebox(
-                        title="Advertencia",
-                        message="No se puede crear un nuevo socio como inactivo.",
-                        level="warning", buttons="ok", parent=self
-                    )
+                    safe_messagebox(title="Advertencia", message="Un socio nuevo no puede crearse como inactivo.",
+                                    level="warning", parent=self)
                     return
 
                 nuevo_socio = Socio(
@@ -307,16 +313,16 @@ class EditUser(BaseApp):
 
                 self.session.add(nuevo_socio)
                 self.session.commit()
-                safe_messagebox(title="Éxito", message="Socio registrado correctamente.",  level="info", buttons="ok", parent=self)
+
+                safe_messagebox(title="Éxito", message="Socio registrado correctamente.", level="info", parent=self)
 
         except Exception as e:
             self.session.rollback()
             safe_messagebox(
                 title="Error",
-                message=f"Ocurrió un error al guardar el socio:\n\n{str(e)}",
-                level="error", buttons="ok", parent=self
+                message=f"Error al guardar el socio:\n{str(e)}",
+                level="error", parent=self
             )
             return
 
-        # Limpia el formulario después del guardado
         self._limpiar_form()

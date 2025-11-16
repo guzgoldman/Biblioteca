@@ -23,7 +23,6 @@ except ImportError as e:
     print("python -m pip install -r requirements.txt")
     sys.exit(1)
 
-# If everything is OK, run the main dashboard
 from vista.login import LoginWindow
 
 if __name__ == "__main__":

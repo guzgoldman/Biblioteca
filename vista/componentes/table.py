@@ -1,21 +1,16 @@
 import tkinter as tk
 from tkinter import ttk
 import customtkinter as ctk
-
+import datetime
 
 class Table(ctk.CTkFrame):
-    """
-    Tabla reutilizable basada en ttk.Treeview.
-    Soporta:
-      - Texto coloreado (usando tags)
-      - Botones simulados (clics en columnas específicas)
-    """
 
     def __init__(self, master, columns, width=1000, height=400, **kwargs):
         super().__init__(master, fg_color="white", **kwargs)
         self.columns = columns
         self.width = width
         self.height = height
+        self._sorting_state = {}
 
         # --- Estilos base ---
         style = ttk.Style()
@@ -60,7 +55,7 @@ class Table(ctk.CTkFrame):
 
         # Encabezados y anchos
         for col in self.columns:
-            self.tree.heading(col["key"], text=col["text"])
+            self.tree.heading(col["key"], text=col["text"],command=lambda c=col["key"]: self._sort_by_column(c))
             self.tree.column(col["key"], width=col.get("width", 120), anchor="center")
 
         # Tags de colores (verde y rojo)
@@ -106,6 +101,86 @@ class Table(ctk.CTkFrame):
         self.tree.bind("<ButtonRelease-1>", on_click)
 
     # =====================================================
-    def tag_config(self):
-        """Compatibilidad (no hace falta, ya configurado arriba)."""
-        pass
+    
+        # =====================================================
+    def _sort_by_column(self, col_key):
+        """Ordena la tabla por una columna (ASC/DESC alternado, soporta fechas dd/mm/yyyy)."""
+
+        import re
+        from datetime import datetime
+
+        try:
+            col_index = next(i for i, c in enumerate(self.columns) if c["key"] == col_key)
+        except StopIteration:
+            return
+
+        rows = list(self.tree.get_children())
+
+        if not rows:
+            return
+
+        sample = None
+        for row_id in rows:
+            vals = self.tree.item(row_id)["values"]
+            if col_index < len(vals):
+                v = vals[col_index]
+                s = str(v).strip()
+                if s:
+                    sample = s
+                    break
+
+        if sample is None:
+            return
+
+        is_date_col = bool(re.match(r"^\d{2}/\d{2}/\d{4}$", sample))
+        is_numeric_col = False
+        if not is_date_col:
+            try:
+                float(sample.replace(",", "."))
+                is_numeric_col = True
+            except ValueError:
+                is_numeric_col = False
+
+        reverse = self._sorting_state.get(col_key, False)
+        self._sorting_state[col_key] = not reverse
+
+        def parse_value(v):
+            s = str(v).strip()
+            if s == "":
+                return (1, None)
+
+            if is_date_col:
+                try:
+                    dt = datetime.strptime(s, "%d/%m/%Y")
+                    return (0, dt)
+                except ValueError:
+                    return (0, s.lower())
+
+            if is_numeric_col:
+                try:
+                    num = float(s.replace(",", "."))
+                    return (0, num)
+                except ValueError:
+                    return (0, s.lower())
+
+            return (0, s.lower())
+
+        data = []
+        for row_id in rows:
+            vals = self.tree.item(row_id)["values"]
+            value = vals[col_index] if col_index < len(vals) else ""
+            data.append((parse_value(value), row_id))
+
+        # Ordenar
+        data.sort(key=lambda x: x[0], reverse=reverse)
+
+        for index, (_, row_id) in enumerate(data):
+            self.tree.move(row_id, "", index)
+
+        for col in self.columns:
+            self.tree.heading(col["key"], text=col["text"])
+
+        # Agregar flecha a la columna ordenada
+        arrow = " ▲" if not reverse else " ▼"
+        header_text = next(c["text"] for c in self.columns if c["key"] == col_key)
+        self.tree.heading(col_key, text=header_text + arrow)

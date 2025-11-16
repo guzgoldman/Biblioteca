@@ -92,7 +92,7 @@ class NewLoan(BaseApp):
         # Eventos reactivos
         self.entries["DNI socio:"].bind("<Return>", lambda e: self._buscar_socio())
         self.entries["ISBN:"].bind("<Return>", lambda e: self._buscar_libro())
-        self.cb_dias.bind("<<ComboboxSelected>>", lambda e: self._actualizar_fecha_devolucion())
+        self.cb_dias.configure(command=lambda value: self._actualizar_fecha_devolucion())
 
     # ======================================================
     def _set_state(self, state_dict):
@@ -179,26 +179,30 @@ class NewLoan(BaseApp):
 
         # Activar préstamo
         self.cb_dias.configure(state="normal")
-        self.entry_fecha_dev.configure(state="normal")
         self._actualizar_fecha_devolucion()
         self.btn_guardar.configure(state="normal")
 
     # ======================================================
     def _actualizar_fecha_devolucion(self):
-        """Calcula la fecha de devolución en base a los días seleccionados."""
+        """Calcula la fecha de devolución en base a los días seleccionados y la muestra como no editable."""
         try:
             dias = int(self.cb_dias.get())
         except ValueError:
             return
 
         fecha_dev = datetime.today().date() + timedelta(days=dias)
+
+        # Habilitar solo para escribir
         self.entry_fecha_dev.configure(state="normal")
         self.entry_fecha_dev.delete(0, "end")
         self.entry_fecha_dev.insert(0, fecha_dev.strftime("%d/%m/%Y"))
+        # Volver a bloquear
         self.entry_fecha_dev.configure(state="disabled")
+
 
     # ======================================================
     def _guardar_prestamo(self):
+        administrador_id=self.admin.dni if self.admin else None,
         dni = self.entries["DNI socio:"].get().strip()
         isbn = self.entries["ISBN:"].get().strip().upper()
         codigo_ejemplar = self.cb_ejemplar.get().strip()
